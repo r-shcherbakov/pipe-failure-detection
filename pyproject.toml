@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "pipe_failure_detection"
+version = "0.0.1"
+description = "In the following repository you can find the detection of defect location of metal pipes with machine learning approaches."
+license = "Unlicense"
+authors = ["R.Shcherbakov <some_email@mail.com>"]
+readme = "README.md"
+include = ["LICENSE"]
+packages = [{ include = "Pipe failure detection", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+Bottleneck = "*"
+catboost = "*"
+clearml = "*"
+numpy = "*"
+pandas = "*"
+parallelbar = "*"
+pydantic = "*"
+pydantic-settings = "*"
+pyod = "*"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+flakehell = "*"
+isort = "*"
+
+mypy = "*"
+poethepoet = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-black = "*"
+pytest-mock = "*"
+pytest-profiling = "*"
+pytest-sugar = "*"
+pytest-xdist = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,24 @@
+# Names are same as PipelineSteps
+common:
+  mandatory_features:
+  - target
+  forbidden_features:
+  - GROUP_ID
+
+preprocess:
+  skip_mark: False
+
+feature_engineer:
+  some_int_parameter: 1
+
+select_features:
+  some_int_parameter: 1
+
+split_dataset:
+  split_test: True
+  num_test_objects: 2
+
+train:
+  skip_cv: True
+  n_splits: 4
+  train_final_model: True
