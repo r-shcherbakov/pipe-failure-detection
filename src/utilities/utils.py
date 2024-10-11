@@ -4,54 +4,16 @@ import os
 from collections.abc import Iterable
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 import numpy as np
 
 from common.config import ALL_TYPES
 from common.constants import GENERAL_EXTENSION
-from settings import PROJECT_PATH
 
 LOGGER = logging.getLogger(__name__)
 
-
-def get_abs_path(path: Union[str, Path]) -> Path:
-    """Returns absolute path.
-
-    Args:
-        path (Union[str, Path]): Relative path.
-
-    Returns:
-        Path: Absolute path.
-    """
-
-    if str(PROJECT_PATH) in str(path):
-        return Path(path)
-    else:
-        return Path(os.path.join(PROJECT_PATH, path))
-    
-    
-def get_last_modified(path: Union[str, Path], suffixes: Optional[List] = None) -> Path:
-    """Returns path of last modified file with required suffix.
-
-    Args:
-        path (Union[str, Path]): Input directory.
-        suffixes (list, optional): List of required suffixes.
-            Defaults to None.
-
-    Returns:
-        Path: Path of last modified file with required suffix.
-    """
-
-    path = Path(path)
-    path_files = path.iterdir()
-    suffixes = suffixes if suffixes is not None else [""]
-    read_files = filter(
-        lambda path_files: path_files.suffix in suffixes, Path(path).rglob("*.*")
-    )
-    return max(read_files, key=os.path.getctime)
-    
 
 def compress_pickle(path: Path, data: pd.DataFrame) -> Path:
     """Saves compressed dataframe to storage.

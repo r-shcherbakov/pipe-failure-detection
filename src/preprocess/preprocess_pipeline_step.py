@@ -4,21 +4,21 @@ import gc
 from glob import glob
 import logging
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, TYPE_CHECKING
 import warnings
 
-from parallelbar import progress_map
 from sklearn import set_config
 from sklearn.pipeline import Pipeline
 
 from common.constants import GENERAL_EXTENSION
 from common.exceptions import PipelineExecutionError
-from common.pipeline_steps import PREPROCESS
+from common.pipeline_steps import PipelineStep, PREPROCESS
 from core import BasePipelineStep
 from utilities.loaders import CsvLoader
 from preprocess.preprocessor import Preprocessor, MarkDataTransformer
-from settings import Settings
-from utilities.utils import is_empty_dir
+
+if TYPE_CHECKING:
+    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -28,12 +28,8 @@ class PreprocessPipelineStep(BasePipelineStep):
         self,
         settings: 'Settings'
     ):
-        self.pipeline_step = PREPROCESS
+        self.pipeline_step: PipelineStep = PREPROCESS
         super().__init__(settings, self.pipeline_step)
-        
-    @property 
-    def _input_directory(self) -> Path:
-        return self.settings.storage.raw_folder
         
     @property 
     def _input_files(self) -> List[Path]:
@@ -44,10 +40,6 @@ class PreprocessPipelineStep(BasePipelineStep):
             Path(file_path) for file_path in glob(str(input_directory) + file_type)
         ]
         return input_filepath_files
-    
-    @property 
-    def _output_directory(self) -> Path:
-        return self.settings.storage.processed_folder
     
     def _upload_artifacts(self) -> None:
         processed_objects: List[str] = [value for value in self.result if isinstance(value, str)]
@@ -122,10 +114,6 @@ class PreprocessPipelineStep(BasePipelineStep):
         return file_name
     
     def _process_data(self) -> None:
-        self.result = progress_map(
-            self._transform_input_data,
-            self._input_files, 
-            n_cpu=self.settings.parallelbar.n_cpu, 
-            error_behavior=self.settings.parallelbar.error_behavior,               
-            process_timeout=self.settings.parallelbar.process_timeout
-        )
+        self.result = []
+        for path in self._input_files:
+            self.result.append(self._transform_input_data(path))

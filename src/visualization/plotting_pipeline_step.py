@@ -4,7 +4,7 @@ import gc
 from glob import glob
 import logging
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Union, TYPE_CHECKING
 import warnings
 
 from clearml import Dataset, Task
@@ -23,13 +23,15 @@ from common.pipeline_steps import (
 )
 from core import BasePipelineStep
 from utilities.loaders import PickleLoader
-from settings import Settings
 from utilities.utils import (
     is_empty_dir,
-    get_last_modified,
     invert_dict,
     split_dataframe,
 )
+from utilities.path_utils import get_last_modified
+
+if TYPE_CHECKING:
+    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -43,16 +45,8 @@ class PlottingPipelineStep(BasePipelineStep):
         super().__init__(settings, self.pipeline_step)
         
     @property 
-    def _input_directory(self) -> Path:
-        return self.settings.storage.prediction_folder
-        
-    @property 
     def _input_files(self) -> List[Path]:
         return []
-    
-    @property 
-    def _output_directory(self) -> Path:
-        return self.settings.artifacts.plots_folder
     
     def _get_data(self, path: Union[Path, str]) -> pd.DataFrame:
         file_path = get_last_modified(path=path, suffixes=GENERAL_EXTENSION)
@@ -121,6 +115,7 @@ class PlottingPipelineStep(BasePipelineStep):
 
             plotter = Plotter()
             for i, small_ldf in enumerate(splitted_ldf):
+                plotter = Plotter(
                     data=small_ldf,
                     filepath=Path(os.path.join(self._output_directory, f"{file_name}_part{i+1}")),
                     title=file_name,

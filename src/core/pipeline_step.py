@@ -134,6 +134,10 @@ class BasePipelineStep(ABC):
             level=logging.DEBUG,
             print_console=False,
         )
+        
+    def _check_input_directory(self):
+        if is_empty_dir(self._input_directory):
+            self._download_input_dataset()
     
     def _download_input_dataset(self) -> None:
         if dataset_id := self.task.get_parameter('General/input_dataset_id'):
@@ -187,22 +191,16 @@ class BasePipelineStep(ABC):
             raise PipelineExecutionError
                 
     @property 
-    @abstractmethod
     def _input_directory(self):
-        pass
+        return self.pipeline_step.input_directory
     
-    def _check_input_directory(self):
-        if is_empty_dir(self._input_directory):
-            self._download_input_dataset()
+    @property 
+    def _output_directory(self):
+        return self.pipeline_step.output_directory
 
     @property 
     @abstractmethod
     def _input_files(self):
-        pass
-    
-    @property 
-    @abstractmethod
-    def _output_directory(self):
         pass
     
     @abstractmethod

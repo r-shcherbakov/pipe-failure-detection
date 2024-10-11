@@ -92,30 +92,18 @@ class StorageSettings(BaseModel):
         directory = Path(os.path.join(self.root_folder, "processed"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory
+
+    @computed_field(description="Path to the splitted pipeline data")
+    def splitted_folder(self) -> Path:
+        directory = Path(os.path.join(self.root_folder, "splitted"))
+        directory.mkdir(exist_ok=True, parents=True)
+        return directory   
     
     @computed_field(description="Path to the pipeline data with features")
     def features_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "features"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory  
-
-    @computed_field(description="Path to the splitted pipeline data")
-    def splitted_folder(self) -> Path:
-        directory = Path(os.path.join(self.root_folder, "splitted"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory  
-
-    @computed_field(description="Path to the train pipeline data")
-    def train_folder(self) -> Path:
-        directory = Path(os.path.join(self.splitted_folder, "train"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory    
-    
-    @computed_field(description="Path to the test pipeline data")
-    def test_folder(self) -> Path:
-        directory = Path(os.path.join(self.splitted_folder, "test"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory   
     
     @computed_field(description="Path to the model's predictions")
     def prediction_folder(self) -> Path:
@@ -130,12 +118,12 @@ class ClearmlSettings(BaseModel):
     project: str = Field("Pipe failure detection", description='Project name for the tasks')
     tags: List[str] = Field(
         ["Pipe failure detection"], 
-        description=' A list of tags which describe the Task to add'
+        description=' A list of tags which describe the Task'
     )
     # output_url: str = Field('s3://bucket/data', description='Target storage for the compressed dataset')
 
 
-class ParallelbarSettings(BaseModel):
+class MultiprocessingSettings(BaseModel):
     n_cpu: int = Field(3)
     process_timeout: int = Field(3600, description='Timeout of one process in seconds')
     error_behavior: str = Field('coerce', description='Specifies what to do upon encountering an error')
@@ -153,7 +141,7 @@ class Settings(BaseSettings):
     random_seed: int = Field(42, description='Seed for equivalent experiment results')
     
     clearml: ClearmlSettings = Field(default_factory=ClearmlSettings)
-    parallelbar: ParallelbarSettings = Field(default_factory=ParallelbarSettings)
+    multiprocessing: MultiprocessingSettings = Field(default_factory=MultiprocessingSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     artifacts: ArtifactsSettings = Field(default_factory=ArtifactsSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
