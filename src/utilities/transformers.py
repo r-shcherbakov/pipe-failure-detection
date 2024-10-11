@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 
 from common.config import ACCEPTED_BOUNDARIES, FILLNA_CONFIG
 from common.constants import SECONDS_IN_HOUR, SECONDS_IN_MINUTE
-from core.transformer import BaseTransformer
+from core import BaseTransformer
 from utilities.utils import get_subclasses, convert_columns_type, get_common_timestep
 
 LOGGER = logging.getLogger(__name__)
@@ -21,9 +21,9 @@ LOGGER = logging.getLogger(__name__)
 
 class DuplicatedColumnsTransformer(BaseTransformer):
     """Drops duplicated columns and leaves the most filled."""
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
-        data = self._drop_duplicated_columns(data)
-        return data
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = self._drop_duplicated_columns(X)
+        return X
     
     def _drop_duplicated_columns(self, data: pd.DataFrame) -> pd.DataFrame:
         """Drops duplicated columns and leaves the most filled.
@@ -48,27 +48,27 @@ class DuplicatedColumnsTransformer(BaseTransformer):
     
 class ColumnsTypeTransformer(BaseTransformer):
     r"""Transformer for converting column values type according to config."""
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
-        data = convert_columns_type(data)
-        return data
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = convert_columns_type(X)
+        return X
     
     
 class ClipTransformer(BaseTransformer):
     """Transformer for removing data outliers with min and max accepted values"""
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Removes data outliers according to config.
 
         Args:
-            data (pd.DataFrame): Input data.
+            X (pd.DataFrame): Input data.
 
         Returns:
             pd.DataFrame: Input data with clipped values exceeding the boundaries.
         """
-        data = self._outlier_correction(data, boundaries=ACCEPTED_BOUNDARIES)
+        X = self._outlier_correction(X, boundaries=ACCEPTED_BOUNDARIES)
         LOGGER.debug(
-            f"ClipTransformer removes outliers, results shape is {data.shape}"
+            f"ClipTransformer removes outliers, results shape is {X.shape}"
         )
-        return data
+        return X
     
     def _outlier_correction(self, data: pd.DataFrame, boundaries: Dict[str, Dict[str, float]]) -> pd.DataFrame:
         """Assigns values outside boundary to boundary values.
@@ -91,36 +91,38 @@ class ClipTransformer(BaseTransformer):
 
 class InfValuesTransformer(BaseTransformer):
     """Transformer for replacing infinite values with nans."""
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Replaces infinite values with nans.
 
         Args:
-            data (pd.DataFrame): Input data.
+            X (pd.DataFrame): Input data.
 
         Returns:
             pd.DataFrame: Input data without infinite values.
         """
 
-        LOGGER.debug(f"InfValuesTransformer found {np.isinf(data).values.sum()} infinite values")
-        data = data.replace([np.inf, -np.inf], np.nan)
-        return data
+        LOGGER.debug(f"ReplaceInfValues found {np.isinf(X.select_dtypes(exclude='category')).values.sum()} "
+                     "infinite values")
+        
+        X = X.replace([np.inf, -np.inf], np.nan)
+        return X
     
     
 class FillNanTransformer(BaseTransformer):
     """Transformer for replacing missing values with values according to config."""
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Replaces missing values with values according to config.
 
         Args:
-            data (pd.DataFrame): Input data.
+            X (pd.DataFrame): Input data.
 
         Returns:
             pd.DataFrame: Input data without missing values.
         """
 
-        LOGGER.debug(f"FillNanTransformer found {data.isna().sum().sum()} NaN values")
-        data = self._fill_missing_values(data, config=FILLNA_CONFIG)
-        return data
+        LOGGER.debug(f"FillNanTransformer found {X.isna().sum().sum()} NaN values")
+        X = self._fill_missing_values(X, config=FILLNA_CONFIG)
+        return X
     
     def _fill_missing_values(self, data: pd.DataFrame, config: Dict[str, Dict[str, float]]) -> pd.DataFrame:
         """Replaces missing values with values according to config.
@@ -160,22 +162,22 @@ class TimeResampler(BaseTransformer):
     def __init__(self, time_step: Optional[int] = None):
         self.time_step = time_step
 
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         """Resamples data to regular time step.
 
         Args:
-            data (pd.DataFrame): Input data.
+            X (pd.DataFrame): Input data.
 
         Returns:
             pd.DataFrame: Input data with regular time step.
         """
         
         if not self.time_step:
-            time_step = get_common_timestep(data)
+            time_step = get_common_timestep(X)
         else:
             time_step = self.time_step
 
-        return data.resample(f"{time_step}s", on="datetime").mean().reset_index()
+        return X.resample(f"{time_step}s", on="datetime").mean().reset_index()
     
     
 class OutlierImputer(BaseTransformer):
@@ -206,25 +208,61 @@ class Aggregator(BaseTransformer):
 
     def __init__(
         self,
-        shift_size: int = 0,
+        feature_source:str,
+        feature_name: Optional[str] = None,
+        filter_column: Optional[str] = None,
+        filter_value: Optional[Union[int, str, pd.Categorical]] = None,
+        shift_size: Optional[int] = 0,
         window: Optional[int] = None,
         min_periods: Optional[int] = None,
-        mask: Optional[List[bool]] = None,
-        agg_func: Union[str, Callable[[Any], Any], None] = None,
+        agg_func: Optional[Union[str, Callable[[Any], Any], None]] = None,
         quantile: Optional[float] = None,
         **kwargs,
-    ):
+    ):   
+        """
+        Args:
+            feature_source (str): Name of processed dataframe column.
+            feature_name (Optional[str], optional): Name of output series. 
+                Defaults to None
+            filter_column (Optional[str], optional): Name of filtering dataframe column. 
+                Defaults to None
+            filter_value (Optional[Union[int, str, pd.Categorical]], optional): Filtering value.
+                Defaults to None
+            shift_size (Optional[int], optional): Number of periods to shift. Can be positive or negative.
+                Defaults to 0.
+            window (Optional[int], optional): Size of the moving window. Defaults to None.
+            min_periods (Optional[int], optional): Minimum number of observations in window
+                required to have a value. Defaults to None.
+            agg_func (Optional[Union[str, Callable[[Any], Any], None]], optional], optional): Function to use 
+                for aggregating the data. Defaults to None.
+            quantile (Optional[float], optional): Value between 0 <= q <= 1, 
+                the quantile(s) to compute. Defaults to None.
+        """
 
-        super().__init__(**kwargs)        
-        self.shift_size = shift_size
-        self.window = window
-        self.min_periods = min_periods
-        self.mask = mask
+        self.feature_source = feature_source
+        self.filter_column = filter_column    
+        self.filter_value = filter_value                
         self.agg_func = agg_func
         self.quantile = quantile
+        self.window = window
+        self.min_periods = min_periods
+        self.shift_size = shift_size
+        
+        self.feature_name = feature_name
+        if not self.feature_name:
+            self.feature_name = type(self).__name__
+            for el in [self.feature_source, self.filter_column, self.filter_value,
+                       self.agg_func, self.quantile, self.window, self.min_periods, 
+                       self.shift_size]:
+                self.feature_name += el if el else ""
+                
+        self.kwargs = kwargs
 
     def _get_aggregation(
-        self, series: pd.Series, window_type: str = "expanding", **kwargs
+        self, 
+        series: pd.Series,
+        window_type: str = "expanding",
+        **kwargs
     ):
 
         if window_type == "rolling":
@@ -265,6 +303,7 @@ class Aggregator(BaseTransformer):
         agg_func: Union[str, Callable[[Any], Any]],
         **kwargs,
     ) -> pd.Series:
+        
         aggregations_dict = {
             "sum": move_sum,
             "mean": move_mean,
@@ -292,6 +331,7 @@ class Aggregator(BaseTransformer):
         window_type: str,
         **kwargs,
     ) -> pd.Series:
+        
         rolling = self._get_aggregation(
             series=series,
             window=window,
@@ -302,33 +342,34 @@ class Aggregator(BaseTransformer):
         output = rolling.agg(agg_func)
         return output
         
-    def transform(self, data: pd.Series) -> pd.Series:
-        """Returns the series of required aggregation of input parameter.
+    def transform(self, X: pd.DataFrame) -> pd.Series:
+        """Returns series of required aggregation of input parameter.
         If input series has more than 7200 points, aggregation is calculated with bottleneck.
 
         Args:
-            data (pd.Series): Input series.
-            shift_size (int): Number of periods to shift. Can be positive or negative.
-            window (Optional[int], optional): Size of the moving window. Defaults to None.
-            min_periods (Optional[int], optional): Minimum number of observations in window required to have a value. Defaults to None.
-            mask (Optional[List[bool]], optional): _description_. Defaults to None.
-            agg_func (Union[str, Callable[[Any], Any], None], optional): Function to use for aggregating the data. Defaults to None.
-            quantile (Optional[float], optional): Value between 0 <= q <= 1, the quantile(s) to compute. Defaults to None.
-
+            X (pd.DataFrame): Input dataframe.
+            
         Raises:
+            KeyError: Raised when feature_source column not in data columns.
             AttributeError: Raised when agg_func nor quantile provided.
 
         Returns:
             pd.Series: Series of required aggregation of input parameter.
         """
-
+        
+        if self.feature_source not in X.columns:
+            raise KeyError
+        
+        if self.filter_column:
+            mask = X[self.filter_column] == self.filter_value
+        else:
+            mask = len(X) * [True]
+            
         window_type = "expanding" if self.window is None else "rolling"
-        mask = data.size * [True] if mask is None else mask
-
         if self.agg_func is not None:
-            if len(data[mask]) > SECONDS_IN_HOUR * 2:
+            if len(X.loc[mask, self.feature_source]) > SECONDS_IN_HOUR * 2:
                 output = self._get_bottleneck_agg(
-                    series=data[mask],
+                    series=X.loc[mask, self.feature_source],
                     window=self.window,
                     min_periods=self.min_periods,
                     agg_func=self.agg_func,
@@ -336,7 +377,7 @@ class Aggregator(BaseTransformer):
                 )
             else:
                 output = self._get_pandas_agg(
-                    series=data[mask],
+                    series=X.loc[mask, self.feature_source],
                     window=self.window,
                     min_periods=self.min_periods,
                     agg_func=self.agg_func,
@@ -345,7 +386,7 @@ class Aggregator(BaseTransformer):
                 )
         elif self.quantile is not None:
             rolling = self._get_aggregation(
-                series=data[mask],
+                series=X.loc[mask, self.feature_source],
                 window=self.window,
                 min_periods=self.min_periods,
                 window_type=window_type,
@@ -355,13 +396,13 @@ class Aggregator(BaseTransformer):
         else:
             message = (
                 f"It's required to provide at least agg_func or quantile in parameters\n"
-                f"for {data.name}"
+                f"for {X.name}"
             )
             LOGGER.error(message)
             raise AttributeError(message)
-        output.name = None
-        output = output.reindex(data.index).shift(self.shift_size)
-        return output
+        
+        X[self.feature_name] = output.reindex(X.index).shift(self.shift_size)
+        return X
     
     
 class Converter(BaseTransformer):
@@ -369,120 +410,54 @@ class Converter(BaseTransformer):
     
     def __init__(
         self,
-        method: str = None,
-        first_shift_size: int = 0,
-        second_shift_size: int = 0,
-        first_window: Optional[int] = None,
-        second_window: Optional[int] = None,
-        first_min_periods: Optional[int] = None,
-        second_min_periods: Optional[int] = None,
-        first_mask: Optional[List[bool]] = None,
-        second_mask: Optional[List[bool]] = None,
-        first_agg_func: Union[str, Callable[[Any], Any], None] = None,
-        second_agg_func: Union[str, Callable[[Any], Any], None] = None,
-        first_quantile: Optional[float] = None,
-        second_quantile: Optional[float] = None,
+        first_feature_source: str,
+        second_feature_source: str,
+        feature_name: Optional[str] = None,
+        method: Optional[str] = "divide",
         **kwargs,
     ):
-
-        super().__init__(**kwargs)
-        self.method = "divide" if method is None else method
-        self.first_mask = first_mask
-        self.first_window = first_window
-        self.first_shift_size = first_shift_size
-        self.first_min_periods = first_min_periods
-        self.first_agg_func = first_agg_func
-        self.first_quantile = first_quantile
-        self.second_mask = second_mask
-        self.second_window = second_window
-        self.second_shift_size = second_shift_size
-        self.second_min_periods = second_min_periods
-        self.second_agg_func = second_agg_func
-        self.second_quantile = second_quantile
         
-    def transform(self, data: pd.Series) -> pd.Series:
-        """Returns the series of calculations of input parameters aggregation
+        self.first_feature_source = first_feature_source
+        self.second_feature_source = second_feature_source
+        self.method = method
+        
+        self.feature_name = feature_name
+        if not self.feature_name:
+            self.feature_name = type(self).__name__
+            for el in [self.first_feature_source, self.second_feature_source, self.method]:
+                self.feature_name += el if el else ""
+        
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Returns the dataframe of calculations of input parameters aggregation
             according to provided method.
 
         Args:
-            data (pd.Series): Input series.
+            X (pd.DataFrame): Input dataframe.
 
         Returns:
-            pd.Series: Series of calculations of input parameters aggregation
-            according to provided method.
+            pd.DataFrame: Dataframe with calculations of input parameters aggregation
+                according to provided method.
         """
+        if self.copy:
+            X = X.copy()
 
-        first_parameters = {
-            key.replace("first_", ""): val
-            for key, val in self.__dict__.items()
-            if "first_" in key
-        }
-        first_series = Aggregator(**first_parameters).fit_transform(data).ffill()
+        if not set([self.first_feature_source, self.second_feature_source]).issubset(X.columns):
+            raise KeyError(f'{self.first_feature_source} and {self.second_feature_source} ' 
+                           'are not in dataframe columns')
         
-        second_parameters = {
-            key.replace("second_", ""): val
-            for key, val in self.__dict__.items()
-            if "second_" in key
-        }
-        second_series = Aggregator(**second_parameters).fit_transform(data).ffill()
-        
+        first_series = X[self.first_feature_source]
+        second_series = X[self.second_feature_source]
         if self.method == "divide":
             output = (first_series / second_series).astype("float32").round(3)
         if self.method == "substract":
             output = (first_series - second_series).astype("float32").round(3)
         if self.method == "normalize":
             output = ((first_series - second_series) / second_series).astype("float32").round(3)
+            
+        X[self.feature_name] = pd.Series(output).reindex(X.index)
 
-        return output
-    
-
-class Shifter(Aggregator, BaseTransformer):
-    r"""Transformer for shifted feature engineering"""
-
-    def __init__(
-        self,
-        shift_size: int,
-        window: Optional[int] = None,
-        min_periods: Optional[int] = None,
-        mask: Optional[List[bool]] = None,
-        agg_func: Union[str, Callable[[Any], Any], None] = None,
-        quantile: Optional[float] = None,
-        **kwargs,
-    ):
-
-        self.mask = mask
-        self.window = window
-        self.shift_size = shift_size
-        self.min_periods = min_periods
-        self.agg_func = agg_func
-        self.quantile = quantile
-
-    def transform(
-        self,
-        series: pd.Series,
-    ) -> pd.Series:
-        """Returns the series of calculations of input parameters shifted
-            aggregation according to provided method.
-
-        Args:
-            series (pd.Series): Input series.
-
-        Returns:
-            pd.Series: Series of calculations of input parameters shifted
-                aggregation according to provided method.
-        """
-
-        parameters = self.__dict__
-        output = self.transform_one_series(series, **parameters).ffill()
-        output.name = None
-        output = (
-            output.reindex(series.index)
-            .shift(self.shift_size)
-            .astype("float32")
-            .round(3)
-        )
-        return output
-
+        return X
+ 
 
 class FourierTransformer(BaseTransformer):
     r"""Transformer for denoising input series with FFT approach"""
@@ -547,12 +522,18 @@ class WaveletTransformer(BaseTransformer):
 class PositiveReplacer(BaseTransformer):
     r"""Transformer for replacing negative values of input series with specified positive value"""
 
-    def __init__(self, pos_value=0.01):
+    def __init__(self, pos_value = 0.01):
         self.pos_value = pos_value
+        super().__init__()        
     
-    def transform(self, series: pd.Series) -> pd.Series:
-        series[series <= 0] = self.pos_value
-        return series
+    def transform(self, X: pd.Series) -> pd.Series:
+        if self.copy:
+            X = X.copy()
+            
+        numeric_features = X.select_dtypes(include='number').columns
+        mask = X[numeric_features] <= 0
+        X[mask] = np.float32(self.pos_value)
+        return X
 
 
 ALL_TRANSFORMERS = {

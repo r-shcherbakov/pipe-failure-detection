@@ -1,136 +1,81 @@
 # -*- coding: utf-8 -*-
 """ Base feature engineer """
-from abc import abstractmethod
 import logging
-import traceback
-from typing import Any, Dict, List, Optional
+from typing import List
 
 import numpy as np
 import pandas as pd
-from sklearn.pipeline import Pipeline
+from sklearn import set_config
+from sklearn.pipeline import Pipeline, make_pipeline
 
-from core.transformer import BaseTransformer
-from utilities.transformers import InfValuesTransformer, ColumnsTypeTransformer, ALL_TRANSFORMERS
+from core import BaseTransformer
+from utilities.transformers import (
+    InfValuesTransformer,
+    ColumnsTypeTransformer,
+    FillNanTransformer,
+    Aggregator,
+)
 from utilities.utils import get_common_timestep
 
 LOGGER = logging.getLogger(__name__)
 
-
-class BaseFeatureEngineer(BaseTransformer):
-    r"""Abstract class for feature engineer."""
-
-    def __init__(
-        self, 
-        config: Dict[str, Any],
-        preselected_features: Optional[List[str]] = None,
-        **kwargs):
-        """_summary_
-
-        Args:
-            config (Dict[str, Any]): Input config of required features and its parameters.
-            preselected_features (List[str], optional): List of preselected features from config. 
-                If features are specified, only these features would be created.
-        """        
-        self.config = config
-        self.preselected_features = preselected_features
-        self.kwargs = kwargs
-        super().__init__(self)
-
+    
+class FeatureEngineer(BaseTransformer):
+    
     def fit(self, X, y=None):
+        self.prefitted_pipeline = None
         return self
     
-    @abstractmethod
-    def transform(self):
-        pass
-    
-    
-class FeatureEngineer(BaseFeatureEngineer):
-    
-    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
-        self.data = data
-        self.initial_columns = self.data.columns
-        self.time_step = get_common_timestep(data)
-        self._preprocessing()
-        self._make_features()  
-        self._postprocessing()
-        return self.data
-    
-    def _preprocessing(self):
-        pipe = Pipeline(
-            [
-                ("drop_inf_values", InfValuesTransformer()),
-            ]
-        ).set_output(transform="pandas")
-        self.data = pipe.transform(self.data)
-        self._get_all_masks()
-
-    def _get_all_masks(self) -> Dict[str, pd.Series]:
-        self.all_masks = dict()
-        # TODO: add here required masks
-        states = ["ordinal", "linear"]
-        for state in states:
-            mask = self.data["category"] == state
-            self.all_masks[state] = pd.Series(mask)
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         
-    def _make_features(self):
-        self._create_rolling_features()
-        self._create_grouped_features()
-        
-    def _create_rolling_features(self):
-        if self.preselected_features:
-            selected_features_names = list(
-                np.intersect1d(self.preselected_features, list(self.config.keys()))
-            )
-        else:
-            selected_features_names = list(self.config.keys())
-
-        for column_name in selected_features_names:
-            LOGGER.debug(f"Processing of {column_name}")
-            local_config = self.config[column_name]
-            next_pipe = self._make_pipeline(config=local_config)
-            feature_source = self.data[local_config["feature_source"]]
-            feature = pd.Series(
-                next_pipe.fit_transform(feature_source), name=column_name
-            )
-            self.data = self.data.join(feature)
-
-    def _make_pipeline(self, config):
-        local_config = {}
-        transformers_instances = []
-        for num, transformer in enumerate(config["transformers"]):
-            for key, value in transformer.get("config", {}).items():
-                if "mask" in key:
-                    local_config[key] = self.all_masks.get(value, value)
-                else:
-                    local_config[key] = value
-
-            transformers_instances.append(
-                (
-                    f"{transformer['transform_name']}_{num}",
-                    ALL_TRANSFORMERS[transformer["transform_name"]](
-                        time_step=self.time_step, 
-                        **local_config
-                    ),
-                )
-            )
-        return Pipeline(transformers_instances)
-    
-    def _create_grouped_features(self):
-        pass
-    
-    def _postprocessing(self):
-        new_columns = self.new_columns
-        try: 
-            self.data = ColumnsTypeTransformer().transform(self.data[new_columns])
-            LOGGER.debug(f"Column types converted for {new_columns}")
-        except Exception as exception:
-            LOGGER.info(f"Converting column types for {new_columns} failed due to: {exception}")
-            LOGGER.info('traceback:' + traceback.format_exc())
+        if self.copy:
+            X = X.copy()
             
+        self.initial_columns = X.columns
+        self.time_step = get_common_timestep(X)
+        
+        set_config(transform_output="pandas")
+        combined_pipeline = make_pipeline(
+            self.preprocessing_pipeline,
+            self.custom_pipeline,
+        )
+        # It's required to start this pipeline to get masks for further transformers
+        X = combined_pipeline.fit_transform(X)
+        self.output_columns = X.columns
+        
+        return X
+    
+    @property
+    def preprocessing_pipeline(self) -> 'Pipeline':
+        pipeline = [
+            ("replace_inf_values", InfValuesTransformer()),
+        ]
+        return Pipeline(pipeline)
+    
+    
+    @property
+    def postprocessing_pipeline(self) -> 'Pipeline':
+        pipeline = [
+            ("fill_nan", FillNanTransformer()),
+        ]
+        return Pipeline(pipeline)
+    
+    @property
+    def custom_pipeline(self) -> 'Pipeline':
+        pipeline = [
+            Aggregator(
+                feature_source="some_column",
+                window=120,
+                shift_size=0,
+                agg_func="median",
+                feature_name="some_column_median_120_shift_0", 
+            ),
+        ]
+        return make_pipeline(*pipeline)
+
     @property
     def new_columns(self) -> List[str]:
         r"""Columns which were generated by feature engineer"""
-        new_columns = np.setdiff1d(np.unique(self.data.columns), self.initial_columns)
+        new_columns = np.setdiff1d(np.unique(self.output_columns), self.initial_columns)
         return new_columns
-        
     
