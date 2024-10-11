@@ -8,13 +8,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 class BaseTransformer(BaseEstimator, TransformerMixin):
     r"""Abstract class for all transformers."""
-
-    def __init__(self):
-        try:
-            self.task = Task.current_task()
-        except: # TODO: specify exception
-            self.task = None
-
     def fit(self, X, y=None):
         return self
     

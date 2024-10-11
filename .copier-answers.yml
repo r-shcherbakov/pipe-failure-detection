@@ -1,13 +1,13 @@
 # yamllint disable-file
 # Answer file maintained by Copier for: https://github.com/KyleKing/calcipy_template
 # Check into version control. Edit by re-running copier and changing responses to the questions
-_commit: 05df3fb
+_commit: c313444
 _src_path: /home/r-shcherbakov/Documents/nedra/ml-project-template
 author_email: some_email@mail.com
 author_name: R.Shcherbakov
 copyright_date: '2024'
 doc_dir: docs/
-docker: true
+docker: false
 package_name_py: pipe_failure_detection
 project_description: null
 project_name: Pipe failure detection

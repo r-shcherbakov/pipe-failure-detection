@@ -34,6 +34,36 @@ def create_missed_directory(directory: Union[str, Path]) -> Path:
     return directory
 
 
+class ArtifactsSettings(BaseModel):
+    root_folder: DirectoryPath = Field(
+        Path(os.path.join(PROJECT_PATH, "artifacts")), 
+        description="Path to the local artifacts folder", 
+        validate_default=True)
+    
+    @field_validator("root_folder", mode="before")
+    def validate_root_folder(cls, directory: Union[str, Path]) -> str:
+        directory = create_missed_directory(directory)
+        return directory
+    
+    @computed_field(description="Path to the fitted models")
+    def models_folder(self) -> Path:
+        directory = Path(os.path.join(self.root_folder, "models"))
+        directory.mkdir(exist_ok=True, parents=True)
+        return directory
+    
+    @computed_field(description="Path to the reports")
+    def reports_folder(self) -> Path:
+        directory = Path(os.path.join(self.root_folder, "reports"))
+        directory.mkdir(exist_ok=True, parents=True)
+        return directory
+        
+    @computed_field(description="Path to the plots")
+    def plots_folder(self) -> Path:
+        directory = Path(os.path.join(self.root_folder, "plots"))
+        directory.mkdir(exist_ok=True, parents=True)
+        return directory
+        
+
 class StorageSettings(BaseModel):
     root_folder: DirectoryPath = Field(
         Path(os.path.join(PROJECT_PATH, "data")), 
@@ -46,49 +76,49 @@ class StorageSettings(BaseModel):
         return directory
     
     @computed_field(description="Path to the raw pipeline data")
-    def pipeline_raw_folder(self) -> Path:
+    def raw_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "raw"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory
     
     @computed_field(description="Path to the external data for pipeline (labels and etc.)")
-    def pipeline_external_folder(self) -> Path:
+    def external_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "external"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory
     
     @computed_field(description="Path to the processed pipeline data")
-    def pipeline_processed_folder(self) -> Path:
+    def processed_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "processed"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory
     
     @computed_field(description="Path to the pipeline data with features")
-    def pipeline_features_folder(self) -> Path:
+    def features_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "features"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory  
 
     @computed_field(description="Path to the splitted pipeline data")
-    def pipeline_splitted_folder(self) -> Path:
+    def splitted_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "splitted"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory  
 
     @computed_field(description="Path to the train pipeline data")
-    def pipeline_train_folder(self) -> Path:
-        directory = Path(os.path.join(self.pipeline_splitted_folder, "train"))
+    def train_folder(self) -> Path:
+        directory = Path(os.path.join(self.splitted_folder, "train"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory    
     
     @computed_field(description="Path to the test pipeline data")
-    def pipeline_test_folder(self) -> Path:
-        directory = Path(os.path.join(self.pipeline_splitted_folder, "test"))
+    def test_folder(self) -> Path:
+        directory = Path(os.path.join(self.splitted_folder, "test"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory   
     
     @computed_field(description="Path to the model's predictions")
-    def pipeline_prediction_folder(self) -> Path:
+    def prediction_folder(self) -> Path:
         directory = Path(os.path.join(self.root_folder, "prediction"))
         directory.mkdir(exist_ok=True, parents=True)
         return directory  
@@ -125,6 +155,7 @@ class Settings(BaseSettings):
     clearml: ClearmlSettings = Field(default_factory=ClearmlSettings)
     parallelbar: ParallelbarSettings = Field(default_factory=ParallelbarSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
+    artifacts: ArtifactsSettings = Field(default_factory=ArtifactsSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     
     class Config:

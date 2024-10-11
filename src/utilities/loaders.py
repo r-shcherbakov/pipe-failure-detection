@@ -3,15 +3,10 @@ r"""
 Preprocessor of the main input data
 """
 import logging
-from abc import ABCMeta
-from pathlib import Path, PosixPath
-from typing import Iterable, Optional, Union
 
-import numpy as np
 import pandas as pd
 
-from common.exceptions import FileTypeError
-from core.loader import BaseLoader
+from core import BaseLoader
 
 LOGGER = logging.getLogger(__name__)
 

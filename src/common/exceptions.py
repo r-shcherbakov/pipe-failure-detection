@@ -12,3 +12,11 @@ class FileTypeError(BaseException):
     
 class MarkingDataError(BaseException):
     """Raised when loader aren't able to mark the data."""
+    
+    
+class PipelineExecutionError(BaseException):
+    """Raised when pipeline failed during execution."""
+    
+    
+class DatasetDownloadError(BaseException):
+    """Raised when pipeline failed during execution."""

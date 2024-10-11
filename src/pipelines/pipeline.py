@@ -1,10 +1,17 @@
 from clearml.automation import PipelineController
 
-from common.enums import PipelineSteps
-from settings import ExperimentSettings
+from common.pipeline_steps import (
+    PRE_RUN, 
+    PREPROCESS, 
+    FEATURE_ENGINEER, 
+    SPLIT_DATASET, 
+    TRAIN, 
+    PLOTTING, 
+)
+from settings import Settings
 
 
-settings = ExperimentSettings()
+settings = Settings()
 
 def post_execute_callback(a_pipeline: PipelineController, a_node: PipelineController.Node) -> None:
     print('Completed Task id={}'.format(a_node.executed))
@@ -22,48 +29,56 @@ pipe = PipelineController(
 )
 
 pipe.add_step(
-    name=f'{PipelineSteps.preprocess} step',
+    name=PREPROCESS.name,
     base_task_project=settings.clearml.project,
-    base_task_name=f'{PipelineSteps.preprocess} task',
+    base_task_name=f'{PREPROCESS.name} task',
     cache_executed_step=True,
     post_execute_callback=post_execute_callback,
-    retry_on_failure=5,
+    retry_on_failure=2,
 )
 
 pipe.add_step(
-    name=f'{PipelineSteps.feature_engineer} step',
-    parents=[f'{PipelineSteps.preprocess} step'],
+    name=SPLIT_DATASET.name,
+    parents=[PREPROCESS.name],
     base_task_project=settings.clearml.project,
-    base_task_name=f'{PipelineSteps.feature_engineer} task',
-    cache_executed_step=True,
-    post_execute_callback=post_execute_callback,
-    retry_on_failure=5,
-)
-
-pipe.add_step(
-    name=f'{PipelineSteps.split_dataset} step',
-    parents=[f'{PipelineSteps.feature_engineer} step'],
-    base_task_project=settings.clearml.project,
-    base_task_name=f'{PipelineSteps.split_dataset} task',
-    cache_executed_step=True,
-    post_execute_callback=post_execute_callback,
-    retry_on_failure=5,
-)
-
-pipe.add_step(
-    name=f'{PipelineSteps.train} step',
-    parents=[f'{PipelineSteps.split_dataset} step'],
-    base_task_project=settings.clearml.project,
-    base_task_name=f'{PipelineSteps.train} task',
+    base_task_name=f'{SPLIT_DATASET.name} task',
+    parameter_override={
+        "General/input_dataset_id": "${preprocess.parameters.General/output_dataset_id}",
+    },
     cache_executed_step=True,
     post_execute_callback=post_execute_callback,
 )
 
 pipe.add_step(
-    name=f'{PipelineSteps.plotting} step',
-    parents=[f'{PipelineSteps.train} step'],
+    name=FEATURE_ENGINEER.name,
+    parents=[SPLIT_DATASET.name],
     base_task_project=settings.clearml.project,
-    base_task_name=f'{PipelineSteps.plotting} task',
+    base_task_name=f'{FEATURE_ENGINEER.name} task',
+    parameter_override={
+        "General/input_dataset_id": "${split_dataset.parameters.General/output_dataset_id}",
+    },
+    cache_executed_step=True,
+    post_execute_callback=post_execute_callback,
+    retry_on_failure=1,
+)
+
+pipe.add_step(
+    name=TRAIN.name,
+    parents=[FEATURE_ENGINEER.name],
+    base_task_project=settings.clearml.project,
+    base_task_name=f'{TRAIN.name} task',
+    parameter_override={
+        "General/input_dataset_id": "${feature_engineer.parameters.General/output_dataset_id}",
+    },
+    cache_executed_step=True,
+    post_execute_callback=post_execute_callback,
+)
+
+pipe.add_step(
+    name=PLOTTING.name,
+    parents=[TRAIN.name],
+    base_task_project=settings.clearml.project,
+    base_task_name=f'{PLOTTING.name} task',
     cache_executed_step=True,
     post_execute_callback=post_execute_callback,
 )
