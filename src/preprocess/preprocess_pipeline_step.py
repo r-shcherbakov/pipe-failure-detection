@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import gc
-from glob import glob
-import logging
 from pathlib import Path
-from typing import List, Union, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 import warnings
 
 from sklearn import set_config
@@ -30,61 +28,37 @@ class PreprocessPipelineStep(BasePipelineStep):
     ):
         self.pipeline_step: PipelineStep = PREPROCESS
         super().__init__(settings, self.pipeline_step)
-        
-    @property 
+
+    @property
     def _input_files(self) -> List[Path]:
-        self._check_input_directory()
-        input_directory = self._input_directory
-        file_type = r"/*csv"
-        input_filepath_files = [
-            Path(file_path) for file_path in glob(str(input_directory) + file_type)
-        ]
-        return input_filepath_files
-    
+        pass
+
     def _upload_artifacts(self) -> None:
-        processed_objects: List[str] = [value for value in self.result if isinstance(value, str)]
-        initial_files = set(
-            file_path.stem.replace(" ", "").upper() for file_path in self._input_files
-        )
-        processing_errors: List[str] = list(initial_files - set(processed_objects))
-        
-        self.task.upload_artifact(
-            name='processed_objects', 
-            artifact_object={"processed_objects": processed_objects})
-        self.task.upload_artifact(
-            name='processing_errors', 
-            artifact_object={"processing_errors": processing_errors})
-    
-    def _transform_input_data(self, file_path: Union[Path, str]):
-        if not isinstance(file_path, Path):
-            file_path = Path(file_path)
-    
-        file_name = Path(file_path).stem.replace(" ", "").upper()
-        self.task.logger.report_text(
-            f"Processing of {file_name}", 
-            level=logging.DEBUG,
-            print_console=False,
-        )
-        
-        data = CsvLoader(path=file_path).load()
+        pass
+
+    def _process_data(self) -> None:
+        file_name = Path(os.path.join(self._input_directory, "data.csv"))
+        data = CsvLoader(path=file_name).load()
+
         # Configure pipeline
         if self.step_params.get('skip_mark', True):
             step_pipeline = Pipeline(
                 [
                     ("preprocessor", Preprocessor())
-                 ]
+                ]
             )
         else:
+            target = CsvLoader(path=os.path.join(self._input_directory, "target_train.csv")).load()
             step_pipeline = Pipeline(
                 steps=[
                     ("preprocessor", Preprocessor()),
-                    ("add_target", MarkDataTransformer()),
-                 ]
+                    ("add_target", MarkDataTransformer(target=target)),
+                ]
             )
         set_config(transform_output="pandas")
-                 
+
         # Transform data
-        try:    
+        try:
             preprocessed = step_pipeline.transform(data)
             self._log_success_step_execution(file_name=file_name)
         except Exception as exception:
@@ -93,7 +67,7 @@ class PreprocessPipelineStep(BasePipelineStep):
                 exception=exception,
             )
             return exception
-        
+
         # Save locally data
         preprocessed_filepath = Path(
             os.path.join(
@@ -107,13 +81,8 @@ class PreprocessPipelineStep(BasePipelineStep):
             )
         except PipelineExecutionError as exception:
             return exception
-            
+
         del preprocessed, data
         gc.collect()
-        
+
         return file_name
-    
-    def _process_data(self) -> None:
-        self.result = []
-        for path in self._input_files:
-            self.result.append(self._transform_input_data(path))
