@@ -4,54 +4,15 @@ import os
 from collections.abc import Iterable
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 import numpy as np
 
-from common.config import ALL_TYPES
 from common.constants import GENERAL_EXTENSION
-from settings import PROJECT_PATH
 
 LOGGER = logging.getLogger(__name__)
 
-
-def get_abs_path(path: Union[str, Path]) -> Path:
-    """Returns absolute path.
-
-    Args:
-        path (Union[str, Path]): Relative path.
-
-    Returns:
-        Path: Absolute path.
-    """
-
-    if str(PROJECT_PATH) in str(path):
-        return Path(path)
-    else:
-        return Path(os.path.join(PROJECT_PATH, path))
-    
-    
-def get_last_modified(path: Union[str, Path], suffixes: Optional[List] = None) -> Path:
-    """Returns path of last modified file with required suffix.
-
-    Args:
-        path (Union[str, Path]): Input directory.
-        suffixes (list, optional): List of required suffixes.
-            Defaults to None.
-
-    Returns:
-        Path: Path of last modified file with required suffix.
-    """
-
-    path = Path(path)
-    path_files = path.iterdir()
-    suffixes = suffixes if suffixes is not None else [""]
-    read_files = filter(
-        lambda path_files: path_files.suffix in suffixes, Path(path).rglob("*.*")
-    )
-    return max(read_files, key=os.path.getctime)
-    
 
 def compress_pickle(path: Path, data: pd.DataFrame) -> Path:
     """Saves compressed dataframe to storage.
@@ -59,7 +20,7 @@ def compress_pickle(path: Path, data: pd.DataFrame) -> Path:
     Args:
         path (Path): Path to output directory.
         data (pd.DataFrame): Input data.
-        
+
     Returns:
         Path: path to compressed file.
     """
@@ -67,32 +28,14 @@ def compress_pickle(path: Path, data: pd.DataFrame) -> Path:
     if file_extension == '' or file_extension != GENERAL_EXTENSION:
         output_filepath = Path(
             os.path.join(path.parent, (path.name + GENERAL_EXTENSION))
-        ) 
+        )
     else:
         output_filepath = Path(path)
     data.to_pickle(
         output_filepath, compression={"method": "gzip", "compresslevel": 1, "mtime": 1}
     )
-    
+
     return output_filepath
-
-
-def convert_columns_type(data: pd.DataFrame) -> pd.DataFrame:
-    """Converts column values type according to config.
-
-    Args:
-        data (pd.DataFrame): Input data.
-
-    Returns:
-        pd.DataFrame: Input data with converted columns types.
-    """
-
-    columns = data.columns.tolist()
-    types_dict = {key: ALL_TYPES[key] for key in columns & ALL_TYPES.keys()}
-    undefined_columns = np.setdiff1d(np.unique(columns), ALL_TYPES.keys())
-    if len(undefined_columns) > 0:
-        reduce_memory_usage(data[undefined_columns])
-    return data.astype(types_dict)
 
 
 def reduce_memory_usage(data: pd.DataFrame) -> pd.DataFrame:
@@ -108,7 +51,7 @@ def reduce_memory_usage(data: pd.DataFrame) -> pd.DataFrame:
 
     initial_memory = data.memory_usage().sum() / 1024**2
     LOGGER.debug(f"Initial memory usage of dataframe is {initial_memory:.2f} MB")
-    
+
     for column, dtype in zip(data.columns, data.dtypes):
         dtype = str(dtype)
         column_data = data[column]
@@ -134,8 +77,8 @@ def reduce_memory_usage(data: pd.DataFrame) -> pd.DataFrame:
             column_data = pd.Categorical(column_data)
         elif "datetime" in dtype:
             column_data = column_data.astype("datetime64[ns]")
-            
-        data[column] = column_data
+
+        data.loc[:, column] = column_data
 
     final_memory = data.memory_usage().sum() / 1024**2
     LOGGER.debug(f"Memory usage after optimization is {final_memory:.2f} MB")
@@ -191,11 +134,11 @@ def invert_dict(input: Dict[Any, Union[Any, Iterable[Any]]]) -> Dict[Any, Any]:
 def split_dataframe(data: pd.DataFrame) -> List[pd.DataFrame]:
     df_size = (data.memory_usage(index=True, deep=True).sum() / (1024**2)).round().astype(int)
     n_splits = int(df_size // 10) # each df no more than 10mb
-    
+
     dataframes = []
     if n_splits == 0:
         return [data]
-    
+
     splitting_index = len(data) // n_splits
     start_index = 0
     end_index = splitting_index
@@ -204,5 +147,5 @@ def split_dataframe(data: pd.DataFrame) -> List[pd.DataFrame]:
         dataframes.append(ldf)
         start_index += splitting_index
         end_index += splitting_index
-        
+
     return dataframes

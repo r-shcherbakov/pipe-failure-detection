@@ -5,9 +5,7 @@ from os import listdir
 from os.path import exists, isfile, join, getctime
 from pathlib import Path
 import shutil
-from typing import List, Union
-
-from settings import PROJECT_PATH
+from typing import List, Union, Optional
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,23 +39,7 @@ def delete_directory(path: Union[str, Path]) -> None:
         LOGGER.warning(f"{e.strerror}: {e.filename}")
 
 
-def get_abs_path(path: Union[str, Path]) -> Path:
-    """Returns absolute path.
-
-    Args:
-        path (Union[str, Path]): Relative path.
-
-    Returns:
-        Path: Absolute path.
-    """
-
-    if str(PROJECT_PATH) in str(path):
-        return Path(path)
-    else:
-        return Path(join(PROJECT_PATH, path))
-
-
-def get_last_modified(path: Union[str, Path], suffixes: list = None) -> Path:
+def get_last_modified(path: Union[str, Path], suffixes: Optional[List] = None) -> Path:
     """Returns path of last modified file with required suffix.
 
     Args:

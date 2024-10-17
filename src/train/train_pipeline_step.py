@@ -3,7 +3,7 @@ import os
 import gc
 import logging
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import warnings
 
 from catboost import (
@@ -22,8 +22,10 @@ from common.exceptions import PipelineExecutionError
 from common.pipeline_steps import TRAIN
 from common.constants import GENERAL_EXTENSION, IGNORED_FEATURES
 from utilities.loaders import PickleLoader
-from settings import Settings
-from utilities.utils import get_last_modified
+from utilities.path_utils import get_last_modified
+
+if TYPE_CHECKING:
+    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -37,24 +39,27 @@ class TrainPipelineStep(BasePipelineStep):
         super().__init__(settings, self.pipeline_step)
         
     @property 
-    def _input_directory(self) -> Path:
-        return self.settings.storage.train_folder
-        
-    @property 
     def _input_files(self) -> List[Path]:
         return []
-    
-    @property 
-    def _output_directory(self) -> Path:
-        return self.settings.storage.prediction_folder
     
     def _upload_artifacts(self) -> None:
         pass
     
-    def _get_data(self, path: Union[Path, str]) -> pd.DataFrame:
-        file_path = get_last_modified(path=path, suffixes=GENERAL_EXTENSION)
-        data = PickleLoader(path=file_path).load()
-        return data
+    def _get_data(self) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
+        output = {}
+        for data_type in ["train", "test"]:
+            data_directory = Path(os.path.join(
+                self._input_directory, 
+                f"{data_type}{GENERAL_EXTENSION}"
+            ))
+            try:
+                data = PickleLoader(path=data_directory).load()
+            except FileNotFoundError:
+                data = None
+            
+            output[data_type] = data
+            
+        return output.get("train"), output.get("test")
     
     def _set_ignored_features(self):
         ignored_features = list(np.intersect1d(self.train_data.columns.tolist(), IGNORED_FEATURES))
@@ -196,8 +201,7 @@ class TrainPipelineStep(BasePipelineStep):
         ) 
         
     def _process_data(self) -> None:
-        self.train_data = self._get_data(self._input_directory)
-        self.test_data = self._get_data(self.settings.storage.test_folder)
+        self.train_data, self.test_data = self._get_data()
         self._set_ignored_features()
         
         # Cross validation
@@ -207,7 +211,8 @@ class TrainPipelineStep(BasePipelineStep):
         self._train_model()
         
         # Get prediction for test data
-        self._predict_test()
+        if self.test_data:
+            self._predict_test()
         
         
 

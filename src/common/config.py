@@ -1,19 +1,15 @@
-# -*- coding: utf-8 -*-
 from typing import Dict, Union, Optional
 
+from common.features import MANDATORY_FEATURES
 
-ALL_TYPES: Dict[str, str] = {
-    "datetime": "datetime64[ns]",
-    "target": "category",
-}
 
-ACCEPTED_BOUNDARIES: Dict[str, Dict[str, float]] = \
-    {
-    "feature_1": {"min": 0, "max": 25000}, 
-    }
+FEATYPE_TYPES: Dict[str, str] = {feature.name: feature.dtype for feature in MANDATORY_FEATURES}
+
+CLIP_CONFIG: Dict[str, Dict[str, float]] = \
+    {feature.name: {"lower": feature.lower, "upper": feature.upper} for feature in MANDATORY_FEATURES}
 
 FILLNA_CONFIG: Dict[str, Dict[str, Union[Union[float, int], Optional[str]]]] = \
-    {  
-    "feature_1": {"value": 0, "method": None, "limit": None}, 
+    {feature.name:
+        {"value": feature.fillna_value, "method": feature.fillna_method, "limit": feature.fillna_limit}
+        for feature in MANDATORY_FEATURES
     }
-    

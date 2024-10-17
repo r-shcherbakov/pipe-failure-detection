@@ -1,9 +1,4 @@
-# Names are same as PipelineSteps
-common:
-  mandatory_features:
-  - target
-  forbidden_features:
-  - GROUP_ID
+# Names are same as PipelineStep
 
 preprocess:
   skip_mark: False

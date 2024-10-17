@@ -9,18 +9,21 @@ include = ["LICENSE"]
 packages = [{ include = "Pipe failure detection", from = "src" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.11"
 Bottleneck = "*"
 catboost = "*"
 clearml = "*"
 numpy = "*"
 pandas = "*"
 parallelbar = "*"
+pyarrow = "*"
 pydantic = "*"
 pydantic-settings = "*"
-pyod = "*"
+scikit-learn = "*"
+pywavelets = "^1.7.0"
 
 [tool.poetry.dev-dependencies]
+ipykernel = "*"
 black = "*"
 flakehell = "*"
 isort = "*"

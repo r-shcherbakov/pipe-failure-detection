@@ -5,7 +5,7 @@ from glob import glob
 import logging
 from pathlib import Path
 import random
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 import warnings
 
 import pandas as pd
@@ -16,7 +16,9 @@ from common.exceptions import PipelineExecutionError
 from common.pipeline_steps import SPLIT_DATASET
 from core import BasePipelineStep
 from utilities.loaders import PickleLoader
-from settings import Settings
+
+if TYPE_CHECKING:
+    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -30,10 +32,6 @@ class SplitDatasetPipelineStep(BasePipelineStep):
         super().__init__(settings, self.pipeline_step)
         
     @property 
-    def _input_directory(self) -> Path:
-        return self.settings.storage.features_folder
-        
-    @property 
     def _input_files(self) -> List[Path]:
         self._check_input_directory()
         input_directory = self._input_directory
@@ -42,11 +40,7 @@ class SplitDatasetPipelineStep(BasePipelineStep):
             Path(file_path) for file_path in glob(str(input_directory) + file_type)
         ]
         return input_filepath_files
-    
-    @property 
-    def _output_directory(self) -> Path:
-        return self.settings.storage.splitted_folder
-    
+
     def _upload_artifacts(self) -> None:
         pass
     
@@ -55,6 +49,7 @@ class SplitDatasetPipelineStep(BasePipelineStep):
         if split_test:
             self.test_objects: Optional[List[str]] = self.step_params.get("test_objects", None)
             if self.test_objects is None:
+                # Set required train test split method
                 random.seed(self.settings.random_seed)
                 num_test_objects = self.step_params.get("num_test_objects", 1)
                 self.test_objects = [
@@ -107,12 +102,12 @@ class SplitDatasetPipelineStep(BasePipelineStep):
             raise PipelineExecutionError
         
         self._save_locally_data(
-            path=self.settings.storage.train_folder,
+            path=Path(os.path.join(self._output_directory, "train")),
             data=train,
         )
 
         if self.step_params.get('split_test', False) and not test.empty:
             self._save_locally_data(
-                path=self.settings.storage.test_folder,
+                path=Path(os.path.join(self._output_directory, "test")),
                 data=test,
             )
