@@ -1,3 +1,6 @@
+# Data
+data/*
+!/data/raw/
 
 # Jupyter Notebook
 .ipynb_checkpoints

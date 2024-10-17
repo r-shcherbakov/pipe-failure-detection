@@ -37,8 +37,8 @@ class PreprocessPipelineStep(BasePipelineStep):
         pass
 
     def _process_data(self) -> None:
-        file_name = Path(os.path.join(self._input_directory, "data.csv"))
-        data = CsvLoader(path=file_name).load()
+        path = Path(os.path.join(self._input_directory, "data.csv"))
+        data = CsvLoader(path=path).load()
 
         # Configure pipeline
         if self.step_params.get('skip_mark', True):
@@ -60,10 +60,10 @@ class PreprocessPipelineStep(BasePipelineStep):
         # Transform data
         try:
             preprocessed = step_pipeline.transform(data)
-            self._log_success_step_execution(file_name=file_name)
+            self._log_success_step_execution(file_name=path.name)
         except Exception as exception:
             self._log_failed_step_execution(
-                file_name=file_name,
+                file_name=path.name,
                 exception=exception,
             )
             return exception
@@ -71,7 +71,7 @@ class PreprocessPipelineStep(BasePipelineStep):
         # Save locally data
         preprocessed_filepath = Path(
             os.path.join(
-                self._output_directory, f"{file_name}{GENERAL_EXTENSION}"
+                self._output_directory, f"{path.stem}{GENERAL_EXTENSION}"
             )
         )
         try:
@@ -84,5 +84,3 @@ class PreprocessPipelineStep(BasePipelineStep):
 
         del preprocessed, data
         gc.collect()
-
-        return file_name
