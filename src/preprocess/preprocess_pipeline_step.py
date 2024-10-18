@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-import os
-from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import warnings
 
 import pandas as pd
 from sklearn import set_config
 from sklearn.pipeline import Pipeline
 
-from common.pipeline_steps import PipelineStep, PREPROCESS
+from common.pipeline_steps import PREPROCESS
 from core import BasePipelineStep
 from preprocess.preprocessor import Preprocessor, MarkDataTransformer
-from settings import Settings
-from utilities.loaders import CsvLoader
+
+if TYPE_CHECKING:
+    from common.pipeline_steps import PipelineStep
+    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -22,7 +22,7 @@ class PreprocessPipelineStep(BasePipelineStep):
         self,
         settings: 'Settings'
     ):
-        self.pipeline_step: PipelineStep = PREPROCESS
+        self.pipeline_step: 'PipelineStep' = PREPROCESS
         super().__init__(settings, self.pipeline_step)
 
     def start(
@@ -32,7 +32,7 @@ class PreprocessPipelineStep(BasePipelineStep):
     ) -> pd.DataFrame:
 
         # Configure pipeline
-        if target or not target.empty:
+        if not target.empty or target:
             step_pipeline = Pipeline(
                 steps=[
                     ("preprocessor", Preprocessor()),
@@ -56,17 +56,3 @@ class PreprocessPipelineStep(BasePipelineStep):
             raise exception
 
         return preprocessed
-
-
-def run_preprocess_step(settings: Settings) -> pd.DataFrame:
-    data_path = Path(os.path.join(settings.storage.raw_folder, "data.csv"))
-    target_path = Path(os.path.join(settings.storage.raw_folder, "target_train.csv"))
-    data = CsvLoader(path=data_path).load()
-    target = CsvLoader(path=target_path).load()
-
-    preprocessor = PreprocessPipelineStep(settings=settings)
-    return preprocessor.start(data=data, target=target)
-
-
-if __name__ == "__main__":
-    run_preprocess_step(settings=Settings())

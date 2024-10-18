@@ -1,2 +1,2 @@
-from features.feature_engineer_pipeline_step import run_feature_engineer_step
+from features.feature_engineer_pipeline_step import FeatureEngineerPipelineStep
 from features.split_dataset_pipeline_step import SplitDatasetPipelineStep
