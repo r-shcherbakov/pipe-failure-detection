@@ -1,8 +1,4 @@
 # Names are same as PipelineStep
-
-preprocess:
-  skip_mark: False
-
 feature_engineer:
   some_int_parameter: 1
 

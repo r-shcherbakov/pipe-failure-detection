@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 r"""Preprocessor transformers"""
-import os
 import logging
 
 import pandas as pd
@@ -8,7 +7,7 @@ from sklearn import set_config
 from sklearn.pipeline import Pipeline
 
 from core import BaseTransformer
-from common.features import TARGET, GROUP_ID
+from common.features import TARGET, GROUP_ID, DATETIME
 from common.config import (
     FEATYPE_TYPES,
     FILLNA_CONFIG,
@@ -46,8 +45,10 @@ class Preprocessor(BaseTransformer):
             ]
         )
         set_config(transform_output="pandas")
-
         data = common_pipeline.transform(data)
+        data = data.sort_values(by=[GROUP_ID.name, DATETIME.name]) \
+            .reset_index(drop=True)
+
         return data
 
 
