@@ -93,7 +93,7 @@ class ClearmlSettings(BaseModel):
     queue_name: str = Field('default', description='The name of the queue')
     project: str = Field("Pipe failure detection", description='Pipe failure detection')
     tags: List[str] = Field(
-        ["Pipe failure detection"],
+        ["Pipe failure detection", "draft"],
         description=' A list of tags which describe the Task'
     )
     # output_url: str = Field('s3://bucket/data', description='Target storage for the compressed dataset')

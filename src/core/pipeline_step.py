@@ -56,7 +56,7 @@ class BasePipelineStep(ABC):
 
     def _log_failed_step_execution(self, exception: Exception) -> None:
         self.task.logger.report_text(
-            f"Execution {self.pipeline_step.name.replace('_', ' ')} for  failed due to: {exception}",
+            f"Execution {self.pipeline_step.name.replace('_', ' ')} failed due to: {exception}",
             level=logging.INFO
         )
         self.task.logger.report_text(

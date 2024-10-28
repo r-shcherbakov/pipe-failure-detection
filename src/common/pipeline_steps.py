@@ -14,8 +14,8 @@ class PipelineStep:
         return self.name
 
 
-PRE_RUN = PipelineStep(
-    name="pre_run",
+PRERUN = PipelineStep(
+    name="prerun",
     task_type=TaskTypes.service.name,
 )
 PREPROCESS = PipelineStep(
@@ -46,7 +46,7 @@ HYPERPARAMETER_OPTIMIZATION = PipelineStep(
     name="hyperparameter_optimization",
     task_type=TaskTypes.optimizer.name
 )
-POST_RUN = PipelineStep(
-    name="post_run",
+POSTRUN = PipelineStep(
+    name="postrun",
     task_type=TaskTypes.service.name
 )

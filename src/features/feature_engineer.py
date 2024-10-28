@@ -36,10 +36,6 @@ class FeatureEngineer(BaseTransformer):
             ("custom", self.custom_pipeline),
             ("postprocessing", self.postprocessing_pipeline),
         ])
-        combined_pipeline = make_pipeline(
-            self.custom_pipeline,
-            self.postprocessing_pipeline,
-        )
         set_config(transform_output="pandas")
         combined_pipeline.set_params(custom__augmenter__timeseries_container=time_series);
 
