@@ -8,15 +8,15 @@ class BaseException(Exception):
 
 class FileTypeError(BaseException):
     """Raised when loader get the files with wrong suffix."""
-    
-    
-class MarkingDataError(BaseException):
-    """Raised when loader aren't able to mark the data."""
-    
-    
+
+
+class SplitDataError(BaseException):
+    """Raised when data couldn't be splitted to train and test with same destribution."""
+
+
 class PipelineExecutionError(BaseException):
     """Raised when pipeline failed during execution."""
-    
-    
+
+
 class DatasetDownloadError(BaseException):
     """Raised when pipeline failed during execution."""
