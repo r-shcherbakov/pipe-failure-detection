@@ -20,9 +20,11 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+catboost/
 develop-eggs/
 dist/
 downloads/
+notebooks/
 eggs/
 .eggs/
 lib/

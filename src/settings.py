@@ -87,37 +87,13 @@ class StorageSettings(BaseModel):
         directory.mkdir(exist_ok=True, parents=True)
         return directory
 
-    @computed_field(description="Path to the processed pipeline data")
-    def processed_folder(self) -> Path:
-        directory = Path(os.path.join(self.root_folder, "processed"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory
-
-    @computed_field(description="Path to the splitted pipeline data")
-    def splitted_folder(self) -> Path:
-        directory = Path(os.path.join(self.root_folder, "splitted"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory
-
-    @computed_field(description="Path to the pipeline data with features")
-    def features_folder(self) -> Path:
-        directory = Path(os.path.join(self.root_folder, "features"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory
-
-    @computed_field(description="Path to the model's predictions")
-    def prediction_folder(self) -> Path:
-        directory = Path(os.path.join(self.root_folder, "prediction"))
-        directory.mkdir(exist_ok=True, parents=True)
-        return directory
-
 
 class ClearmlSettings(BaseModel):
     execute_remotely: bool = Field(False, description='Option to enqueue task for remote execution')
     queue_name: str = Field('default', description='The name of the queue')
     project: str = Field("Pipe failure detection", description='Pipe failure detection')
     tags: List[str] = Field(
-        ["Pipe failure detection"],
+        ["Pipe failure detection", "draft"],
         description=' A list of tags which describe the Task'
     )
     # output_url: str = Field('s3://bucket/data', description='Target storage for the compressed dataset')

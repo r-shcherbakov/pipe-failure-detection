@@ -1,113 +1,98 @@
 # -*- coding: utf-8 -*-
-import os
-import gc
-from glob import glob
-import logging
-from pathlib import Path
-import random
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Optional, Tuple, List, TYPE_CHECKING
 import warnings
 
+from evidently.report import Report
+from evidently.metrics import DatasetDriftMetric
+import numpy as np
 import pandas as pd
-from tqdm import tqdm
+from sklearn.model_selection import StratifiedShuffleSplit
 
-from common.constants import GENERAL_EXTENSION
-from common.exceptions import PipelineExecutionError
+from common.enums import DefectType
+from common.exceptions import SplitDataError
+from common.features import TARGET
 from common.pipeline_steps import SPLIT_DATASET
 from core import BasePipelineStep
-from utilities.loaders import PickleLoader
 
 if TYPE_CHECKING:
+    from common.pipeline_steps import PipelineStep
     from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
 
 class SplitDatasetPipelineStep(BasePipelineStep):
     def __init__(
         self,
-        settings: 'Settings'
+        settings: 'Settings',
+        data_drift_threshold: Optional[float] = 0.55,
     ):
-        self.pipeline_step = SPLIT_DATASET
+        self.pipeline_step: 'PipelineStep' = SPLIT_DATASET
         super().__init__(settings, self.pipeline_step)
-        
-    @property 
-    def _input_files(self) -> List[Path]:
-        self._check_input_directory()
-        input_directory = self._input_directory
-        file_type = f"/*{GENERAL_EXTENSION}"
-        input_filepath_files = [
-            Path(file_path) for file_path in glob(str(input_directory) + file_type)
-        ]
-        return input_filepath_files
+        self.data_drift_threshold = data_drift_threshold
 
-    def _upload_artifacts(self) -> None:
-        pass
-    
-    def _set_test_objects(self) -> None:
-        split_test = self.step_params.get('split_test', False)
-        if split_test:
-            self.test_objects: Optional[List[str]] = self.step_params.get("test_objects", None)
-            if self.test_objects is None:
-                # Set required train test split method
-                random.seed(self.settings.random_seed)
-                num_test_objects = self.step_params.get("num_test_objects", 1)
-                self.test_objects = [
-                    Path(file_path).stem \
-                    for file_path in random.sample(self._input_files, num_test_objects)
-                ]
-                self.step_params["test_objects"] = self.test_objects
-            else:
-                self.step_params["test_objects"] = self.test_objects
-        else:
-            self.test_objects = []
-            
-    def _log_groups_mapping(self) -> None:
-        self.file_name_mapping: Dict[str, int] = {
-            Path(file_path).stem.replace(" ", "").upper(): number \
-                for number, file_path in enumerate(self._input_files)
-        }
-        self.task.upload_artifact("groups_mapping", self.file_name_mapping)  
-    
-    def _process_data(self) -> None:
-        self._set_test_objects()
-        self._log_groups_mapping()
-            
-        train = pd.DataFrame()
-        test = pd.DataFrame()
-        try:
-            for file_path in tqdm(self._input_files, total=len(self._input_files)):
-                file_name = Path(file_path).stem
-                self.task.logger.report_text(
-                    f"Processing of {file_name}", 
-                    level=logging.DEBUG,
-                    print_console=False,
-                )
-                data = PickleLoader(path=file_path).load()
-                data['GROUP_ID'] = self.file_name_mapping[file_name]
+    def _check_dataset_drift(
+        self,
+        data: pd.DataFrame,
+        test_index: List[int]
+    ) -> bool:
+        # You also could set required parameter at params.yaml configuration
+        # file and use it via self.step_params.get('num_stattest_threshold')
+        drift_report = Report(metrics=[
+            DatasetDriftMetric(
+                    num_stattest='psi',
+                    num_stattest_threshold=0.5,
+                    drift_share=0.5,
+                ),
+            ])
 
-                if file_name in self.test_objects:
-                    test = pd.concat([test, data])
-                else:
-                    train = pd.concat([train, data])
-
-                del data
-                gc.collect()
-                
-        except Exception as exception:
-            self._log_failed_step_execution(
-                file_name=file_name,
-                exception=exception,
-            )
-            raise PipelineExecutionError
-        
-        self._save_locally_data(
-            path=Path(os.path.join(self._output_directory, "train")),
-            data=train,
+        drift_report.run(
+            reference_data=data.iloc[~test_index].reset_index(drop=True),
+            current_data=data.iloc[test_index].reset_index(drop=True),
         )
 
-        if self.step_params.get('split_test', False) and not test.empty:
-            self._save_locally_data(
-                path=Path(os.path.join(self._output_directory, "test")),
-                data=test,
+        dataset_drift = drift_report.as_dict()['metrics'][0]['result']['dataset_drift']
+        return dataset_drift
+
+    def _get_test_objects(self, data: pd.DataFrame) -> List[str]:
+        test_size = self.step_params.get('test_size', 0)
+        test_size = max(0, min(test_size, 0.5))
+        if test_size == 0:
+            return []
+        else:
+            n_splits = int(1 / test_size) * 2
+            splitter = StratifiedShuffleSplit(
+                n_splits=n_splits,
+                test_size=test_size,
+                random_state=self.settings.random_seed,
             )
+
+            X = data.drop(columns=[TARGET.name])
+            y = data[TARGET.name]
+            for _, test_index in splitter.split(X, y):
+                data_drift = self._check_dataset_drift(X, test_index)
+                if not data_drift:
+                    return X.iloc[test_index].index.tolist()
+
+            raise SplitDataError
+
+
+    def start(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        # Pop unlabeled data
+        unlabeled = data[data[TARGET.name] == DefectType.UNDEFINED.value].copy()
+        data = data.drop(index=unlabeled.index)
+
+        test_ids = self._get_test_objects(data)
+        if test_ids:
+            self.task.upload_artifact(
+                name='test objects',
+                artifact_object={"test_objects": test_ids},
+            )
+            test = data[data.index.isin(test_ids)].copy()
+            train = data[~data.index.isin(test_ids)].copy()
+        else:
+            test = pd.DataFrame()
+            train = data
+
+        return train, test, unlabeled

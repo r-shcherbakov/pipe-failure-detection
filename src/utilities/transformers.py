@@ -90,7 +90,7 @@ class ColumnsTypeTransformer(BaseTransformer):
             undefined_columns = np.unique(columns)
 
         if len(undefined_columns) > 0:
-            reduce_memory_usage(data[undefined_columns])
+            data[undefined_columns] = reduce_memory_usage(data[undefined_columns])
 
         return data
 

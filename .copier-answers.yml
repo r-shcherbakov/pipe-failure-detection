@@ -12,6 +12,6 @@ package_name_py: pipe_failure_detection
 project_description: null
 project_name: Pipe failure detection
 project_namespace: null
-python_version: ^3.11
+python_version: ~3.10
 repository_provider: null
 

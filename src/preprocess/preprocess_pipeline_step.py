@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
-import os
-import gc
-from pathlib import Path
-from typing import List, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import warnings
 
+import pandas as pd
 from sklearn import set_config
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 
-from common.constants import GENERAL_EXTENSION
-from common.exceptions import PipelineExecutionError
-from common.pipeline_steps import PipelineStep, PREPROCESS
+from common.features import GROUP_ID
+from common.pipeline_steps import PREPROCESS
 from core import BasePipelineStep
-from utilities.loaders import CsvLoader
 from preprocess.preprocessor import Preprocessor, MarkDataTransformer
 
 if TYPE_CHECKING:
+    from common.pipeline_steps import PipelineStep
     from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -26,61 +24,56 @@ class PreprocessPipelineStep(BasePipelineStep):
         self,
         settings: 'Settings'
     ):
-        self.pipeline_step: PipelineStep = PREPROCESS
+        self.pipeline_step: 'PipelineStep' = PREPROCESS
         super().__init__(settings, self.pipeline_step)
 
-    @property
-    def _input_files(self) -> List[Path]:
-        pass
-
-    def _upload_artifacts(self) -> None:
-        pass
-
-    def _process_data(self) -> None:
-        path = Path(os.path.join(self._input_directory, "data.csv"))
-        data = CsvLoader(path=path).load()
-
-        # Configure pipeline
-        if self.step_params.get('skip_mark', True):
-            step_pipeline = Pipeline(
-                [
-                    ("preprocessor", Preprocessor())
-                ]
-            )
+    def _sample_data(self, data: pd.DataFrame) -> pd.DataFrame:
+        sample_size = self.step_params.get('sample_size', 1)
+        # validate sample size
+        sample_size = max(0, min(sample_size, 1))
+        if sample_size == 1:
+            sample_inds = data.index
         else:
-            target = CsvLoader(path=os.path.join(self._input_directory, "target_train.csv")).load()
+            splitter = GroupShuffleSplit(
+                train_size=sample_size,
+                n_splits=1,
+                random_state=self.settings.random_seed)
+            split = splitter.split(data, groups=data[GROUP_ID.name])
+            sample_inds, _ = next(split)
+
+        return data.iloc[sample_inds].reset_index(drop=True)
+
+    def start(
+        self,
+        data: pd.DataFrame,
+        target: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
+
+        # Shrink data to speed up the locally testing of the pipeline
+        # Be carefull with it because it affects the distribution of classes
+        data = self._sample_data(data)
+        # Configure pipeline
+        if not target.empty or target:
             step_pipeline = Pipeline(
                 steps=[
                     ("preprocessor", Preprocessor()),
                     ("add_target", MarkDataTransformer(target=target)),
                 ]
             )
-        set_config(transform_output="pandas")
+        else:
+            step_pipeline = Pipeline(
+                [
+                    ("preprocessor", Preprocessor())
+                ]
+            )
 
+        set_config(transform_output="pandas")
         # Transform data
         try:
             preprocessed = step_pipeline.transform(data)
-            self._log_success_step_execution(file_name=path.name)
+            self._log_success_step_execution()
         except Exception as exception:
-            self._log_failed_step_execution(
-                file_name=path.name,
-                exception=exception,
-            )
-            return exception
+            self._log_failed_step_execution(exception=exception)
+            raise exception
 
-        # Save locally data
-        preprocessed_filepath = Path(
-            os.path.join(
-                self._output_directory, f"{path.stem}{GENERAL_EXTENSION}"
-            )
-        )
-        try:
-            self._save_locally_data(
-                path=preprocessed_filepath,
-                data=preprocessed,
-            )
-        except PipelineExecutionError as exception:
-            return exception
-
-        del preprocessed, data
-        gc.collect()
+        return preprocessed

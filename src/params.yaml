@@ -1,19 +1,17 @@
 # Names are same as PipelineStep
-
 preprocess:
-  skip_mark: False
+    sample_size: 1
 
 feature_engineer:
-  some_int_parameter: 1
+    some_int_parameter: 1
 
 select_features:
-  some_int_parameter: 1
+    some_int_parameter: 1
 
 split_dataset:
-  split_test: True
-  num_test_objects: 2
+    test_size: 0.2
 
 train:
-  skip_cv: True
-  n_splits: 4
-  train_final_model: True
+    skip_cv: True
+    n_splits: 4
+    train_final_model: True
