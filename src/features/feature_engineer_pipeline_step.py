@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING
 import warnings
 
 import pandas as pd
@@ -23,15 +23,26 @@ class FeatureEngineerPipelineStep(BasePipelineStep):
         self.pipeline_step: 'PipelineStep' = FEATURE_ENGINEER
         super().__init__(settings, self.pipeline_step)
 
-    def start(self, data: pd.DataFrame) -> pd.DataFrame:
+    def start(
+        self,
+        train: pd.DataFrame,
+        test: pd.DataFrame,
+    ) ->  Tuple['FeatureEngineer', pd.DataFrame, pd.DataFrame]:
 
         fe = FeatureEngineer()
+        try:
+            fe.fit(train)
+        except Exception as exception:
+            self._log_failed_step_execution(exception=exception)
+            raise exception
+
         # Transform data
         try:
-            features = fe.transform(data)
+            train_features = fe.transform(train)
+            test_features = fe.transform(test)
             self._log_success_step_execution()
         except Exception as exception:
             self._log_failed_step_execution(exception=exception)
-            return exception
+            raise exception
 
-        return features
+        return fe, train_features, test_features
