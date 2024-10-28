@@ -39,6 +39,9 @@ pytest-profiling = "*"
 pytest-sugar = "*"
 pytest-xdist = "*"
 
+[tool.poetry.group.dev.dependencies]
+evidently = "^0.4.38"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
