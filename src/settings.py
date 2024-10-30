@@ -137,3 +137,5 @@ class Settings(BaseSettings):
         return logging
 
 
+SETTINGS = Settings()
+

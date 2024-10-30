@@ -16,36 +16,28 @@ from core import BasePipelineStep
 
 if TYPE_CHECKING:
     from common.pipeline_steps import PipelineStep
-    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
 
 class SplitDatasetPipelineStep(BasePipelineStep):
-    def __init__(
-        self,
-        settings: 'Settings',
-        data_drift_threshold: Optional[float] = 0.55,
-    ):
+    def __init__(self):
         self.pipeline_step: 'PipelineStep' = SPLIT_DATASET
-        super().__init__(settings, self.pipeline_step)
-        self.data_drift_threshold = data_drift_threshold
+        super().__init__(self.pipeline_step)
 
     def _check_dataset_drift(
         self,
         data: pd.DataFrame,
         test_index: List[int]
     ) -> bool:
-        # You also could set required parameter at params.yaml configuration
-        # file and use it via self.step_params.get('num_stattest_threshold')
         drift_report = Report(metrics=[
             DatasetDriftMetric(
-                    num_stattest='psi',
-                    num_stattest_threshold=0.5,
-                    drift_share=0.5,
-                ),
-            ])
+                    num_stattest=self.step_params.get('num_stattest', 'ks'),
+                    num_stattest_threshold=self.step_params.get('num_stattest_threshold', 0.5),
+                    drift_share=self.step_params.get('drift_share', 0.5),
+            ),
+        ])
 
         drift_report.run(
             reference_data=data.iloc[~test_index].reset_index(drop=True),

@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 from clearml import Task
 import yaml
 
+from settings import SETTINGS
+
 if TYPE_CHECKING:
     from common.pipeline_steps import PipelineStep
     from settings import Settings
@@ -18,11 +20,10 @@ class BasePipelineStep(ABC):
 
     def __init__(
         self,
-        settings: 'Settings',
         pipeline_step: 'PipelineStep',
     ):
-        self.settings: 'Settings' = settings
         self.pipeline_step: 'PipelineStep' = pipeline_step
+        self.settings: 'Settings' = SETTINGS
 
         self._init_task()
         self._init_parameters()

@@ -14,18 +14,14 @@ from preprocess.preprocessor import Preprocessor, MarkDataTransformer
 
 if TYPE_CHECKING:
     from common.pipeline_steps import PipelineStep
-    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class PreprocessPipelineStep(BasePipelineStep):
-    def __init__(
-        self,
-        settings: 'Settings'
-    ):
+    def __init__(self):
         self.pipeline_step: 'PipelineStep' = PREPROCESS
-        super().__init__(settings, self.pipeline_step)
+        super().__init__(self.pipeline_step)
 
     def _sample_data(self, data: pd.DataFrame) -> pd.DataFrame:
         sample_size = self.step_params.get('sample_size', 1)

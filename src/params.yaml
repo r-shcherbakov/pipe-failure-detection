@@ -2,14 +2,16 @@
 preprocess:
     sample_size: 1
 
-feature_engineer:
-    some_int_parameter: 1
-
-select_features:
-    some_int_parameter: 1
-
 split_dataset:
     test_size: 0.2
+    num_stattest: ks
+    num_stattest_threshold: 0.5
+
+select_features:
+    metric_diff_threshold: 0.001
+
+feature_engineer:
+    some_int_parameter: 1
 
 train:
     skip_cv: True

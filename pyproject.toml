@@ -6,7 +6,7 @@ license = "Unlicense"
 authors = ["R.Shcherbakov <some_email@mail.com>"]
 readme = "README.md"
 include = ["LICENSE"]
-packages = [{ include = "Pipe failure detection", from = "src" }]
+packages = [{ include = "src", from = "." }]
 
 [tool.poetry.dependencies]
 python = "~3.10"
@@ -22,6 +22,7 @@ pydantic-settings = "*"
 scikit-learn = "*"
 pywavelets = "^1.7.0"
 tsfresh = "^0.20.3"
+lightgbm = "^4.5.0"
 
 [tool.poetry.dev-dependencies]
 ipykernel = "*"
