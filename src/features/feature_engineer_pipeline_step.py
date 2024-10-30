@@ -10,18 +10,14 @@ from features.feature_engineer import FeatureEngineer
 
 if TYPE_CHECKING:
     from common.pipeline_steps import PipelineStep
-    from settings import Settings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class FeatureEngineerPipelineStep(BasePipelineStep):
-    def __init__(
-        self,
-        settings: 'Settings'
-    ):
+    def __init__(self):
         self.pipeline_step: 'PipelineStep' = FEATURE_ENGINEER
-        super().__init__(settings, self.pipeline_step)
+        super().__init__(self.pipeline_step)
 
     def start(
         self,
