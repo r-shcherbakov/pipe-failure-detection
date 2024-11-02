@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 from clearml import PipelineController, Dataset
 import pandas as pd
 
 from common.exceptions import PipelineExecutionError
+from common.features import TARGET
 from common.pipeline_steps import (
     PRERUN,
     PREPROCESS,
@@ -119,7 +120,12 @@ def run_select_features_step(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataF
 def run_feature_engineer_step(
     train: pd.DataFrame,
     test: pd.DataFrame,
+    selected_features: Optional[List[str]] = None,
 ) -> Tuple['FeatureEngineer', pd.DataFrame, pd.DataFrame]:
+    if selected_features:
+        train = train[selected_features + [TARGET.name]]
+        test = test[selected_features + [TARGET.name]]
+
     if train.empty:
         raise PipelineExecutionError("Data is empty")
     else:
@@ -200,17 +206,23 @@ if __name__ == '__main__':
         )
     )
 
-    # pipe.add_function_step(
-    #     name=FEATURE_ENGINEER.name,
-    #     task_type=FEATURE_ENGINEER.task_type,
-    #     parents=[PREPROCESS.name],
-    #     function=run_feature_engineer_step,
-    #     function_kwargs=dict(
-    #       data='${preprocess.preprocessed_data}'
-    #     ),
-    #     function_return=['features'],
-    #     cache_executed_step=True,
-    # )
+    pipe.add_function_step(
+        name=FEATURE_ENGINEER.name,
+        task_type=FEATURE_ENGINEER.task_type,
+        parents=[SELECT_FEATURES.name],
+        function=run_feature_engineer_step,
+        function_kwargs=dict(
+            train='${split_dataset.train}',
+            test='${split_dataset.test}',   
+            selected_features='${select_features.selected_features}'
+        ),
+        function_return=['feature_engineer', 'train', 'test'],
+        cache_executed_step=True,
+        continue_behaviour=dict(
+            continue_on_fail=False,
+            continue_on_abort=False,
+        )
+    )
 
     pipe.set_default_execution_queue(SETTINGS.clearml.queue_name)
     if SETTINGS.clearml.execute_remotely:
