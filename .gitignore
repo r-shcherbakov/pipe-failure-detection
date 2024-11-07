@@ -21,6 +21,7 @@ __pycache__/
 .Python
 build/
 catboost/
+catboost_info/
 develop-eggs/
 dist/
 downloads/
