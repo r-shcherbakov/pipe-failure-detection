@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from clearml import PipelineController, Dataset
 import pandas as pd
@@ -13,6 +13,9 @@ from common.pipeline_steps import (
     FEATURE_ENGINEER,
     SELECT_FEATURES,
     SPLIT_DATASET,
+    SELECT_MODEL,
+    MODELWISE_ANALYSIS,
+    SAMPLEWISE_ANALYSIS,
 )
 from features import (
     FeatureEngineerPipelineStep,
@@ -20,6 +23,11 @@ from features import (
     SelectFeaturesPipelineStep,
 )
 from preprocess import PreprocessPipelineStep
+from research import (
+    SelectModelPipelineStep,
+    ModelwiseAnalysisPipelineStep,
+    SamplewiseAnalysisPipelineStep,
+)
 from settings import SETTINGS
 from utilities.loaders import CsvLoader
 from utilities.path_utils import is_empty_dir
@@ -95,8 +103,8 @@ def run_preprocess_step(input_dataset_id: Optional[str] = None) -> pd.DataFrame:
     data = CsvLoader(path=data_path).load()
     target = CsvLoader(path=target_path).load()
 
-    preprocessor = PreprocessPipelineStep()
-    return preprocessor.start(data=data, target=target)
+    step = PreprocessPipelineStep()
+    return step.start(data=data, target=target)
 
 
 def run_split_dataset_step(
@@ -105,16 +113,18 @@ def run_split_dataset_step(
     if data.empty:
         raise PipelineExecutionError("Data is empty")
     else:
-        fe = SplitDatasetPipelineStep()
-        return fe.start(data=data)
+        step = SplitDatasetPipelineStep()
+        return step.start(data=data)
 
 
-def run_select_features_step(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def run_select_features_step(
+    data: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     if data.empty:
         raise PipelineExecutionError("Data is empty")
     else:
-        fe = SelectFeaturesPipelineStep()
-        return fe.start(data)
+        step = SelectFeaturesPipelineStep()
+        return step.start(data)
 
 
 def run_feature_engineer_step(
@@ -135,6 +145,51 @@ def run_feature_engineer_step(
             test=test,
         )
         return fitted_fe, train_features, test_features
+
+
+def run_select_model_step(
+    data: pd.DataFrame,
+) -> Tuple[Any, dict[str, Union[str, int, float]]]:
+    if data.empty:
+        raise PipelineExecutionError("Data is empty")
+    else:
+        step = SelectModelPipelineStep()
+        best_model, best_params = step.start(data=data)
+        return best_model, best_params
+
+
+def run_modelwise_analysis_step(
+    model: Any,
+    data: pd.DataFrame,
+) -> None:
+    if data.empty:
+        raise PipelineExecutionError("Data is empty")
+    else:
+        step = ModelwiseAnalysisPipelineStep()
+        step.start(model=model, data=data)
+
+
+def run_samplewise_analysis_step(
+    model: Any,
+    data: pd.DataFrame,
+) -> None:
+    if data.empty:
+        raise PipelineExecutionError("Data is empty")
+    else:
+        step = SamplewiseAnalysisPipelineStep()
+        step.start(model=model, data=data)
+
+
+def run_hyperparameter_optimization_step() -> dict[str, Union[str, int, float]]:
+    pass
+
+
+def run_train_step() -> None:
+    pass
+
+
+def run_error_analysis_step() -> None:
+    pass
 
 
 if __name__ == '__main__':
@@ -209,11 +264,11 @@ if __name__ == '__main__':
     pipe.add_function_step(
         name=FEATURE_ENGINEER.name,
         task_type=FEATURE_ENGINEER.task_type,
-        parents=[SELECT_FEATURES.name],
+        parents=[SELECT_FEATURES.name, SPLIT_DATASET.name],
         function=run_feature_engineer_step,
         function_kwargs=dict(
             train='${split_dataset.train}',
-            test='${split_dataset.test}',   
+            test='${split_dataset.test}',
             selected_features='${select_features.selected_features}'
         ),
         function_return=['feature_engineer', 'train', 'test'],
@@ -221,6 +276,60 @@ if __name__ == '__main__':
         continue_behaviour=dict(
             continue_on_fail=False,
             continue_on_abort=False,
+        )
+    )
+
+    pipe.add_function_step(
+        name=SELECT_MODEL.name,
+        task_type=SELECT_MODEL.task_type,
+        parents=[FEATURE_ENGINEER.name],
+        function=run_select_model_step,
+        function_kwargs=dict(
+            data='${feature_engineer.train}',
+        ),
+        function_return=['best_model', 'best_params'],
+        cache_executed_step=True,
+        continue_behaviour=dict(
+            continue_on_fail=True,
+            continue_on_abort=False,
+            skip_children_on_fail=True,
+            skip_children_on_abort=False,
+        )
+    )
+
+    pipe.add_function_step(
+        name=MODELWISE_ANALYSIS.name,
+        task_type=MODELWISE_ANALYSIS.task_type,
+        parents=[FEATURE_ENGINEER.name, SELECT_MODEL.name],
+        function=run_modelwise_analysis_step,
+        function_kwargs=dict(
+            model='${select_model.best_model}',
+            data='${feature_engineer.train}',
+        ),
+        cache_executed_step=True,
+        continue_behaviour=dict(
+            continue_on_fail=True,
+            continue_on_abort=False,
+            skip_children_on_fail=True,
+            skip_children_on_abort=False,
+        )
+    )
+
+    pipe.add_function_step(
+        name=SAMPLEWISE_ANALYSIS.name,
+        task_type=SAMPLEWISE_ANALYSIS.task_type,
+        parents=[FEATURE_ENGINEER.name, SELECT_MODEL.name],
+        function=run_samplewise_analysis_step,
+        function_kwargs=dict(
+            model='${select_model.best_model}',
+            data='${feature_engineer.train}',
+        ),
+        cache_executed_step=True,
+        continue_behaviour=dict(
+            continue_on_fail=True,
+            continue_on_abort=False,
+            skip_children_on_fail=True,
+            skip_children_on_abort=False,
         )
     )
 

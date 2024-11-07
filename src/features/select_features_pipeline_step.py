@@ -30,10 +30,10 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
         self.pipeline_step: 'PipelineStep' = SELECT_FEATURES
         super().__init__(self.pipeline_step)
 
-        self.learning_rate = self.step_params.get('learning_rate', 0.01)
-        self.n_estimators = self.step_params.get('n_estimators', 300)
-        self.folds = self.step_params.get('folds', 5)
-        self.metric = self.step_params.get('metric', 'roc_auc')
+        self.learning_rate: float = self.step_params.get('learning_rate', 0.01)
+        self.n_estimators: int = self.step_params.get('n_estimators', 300)
+        self.folds: int = self.step_params.get('folds', 5)
+        self.scoring: str = self.step_params.get('scoring', 'roc_auc')
 
     def _get_columns_mapping(self, data: pd.DataFrame) -> dict:
         columns_mapping = dict(zip(
@@ -98,7 +98,7 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
             X=data,
             y=labels,
             cv=self._splitter,
-            scoring=self.metric,
+            scoring=self.scoring,
             return_estimator=True
         )
 
@@ -154,7 +154,7 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
                 X=X.drop(columns=features_to_remove + [feature]),
                 y=y,
                 cv=self._splitter,
-                scoring=self.metric,
+                scoring=self.scoring,
             )
             cv_score_mean = cv_score.mean()
             feature_cv_scores_mean.append(cv_score_mean)
