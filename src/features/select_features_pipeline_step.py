@@ -8,7 +8,8 @@ import pandas as pd
 from pandas.util import hash_array
 from sklearn.model_selection import (
     cross_validate,
-    cross_val_score
+    cross_val_score,
+    StratifiedShuffleSplit,
 )
 from tqdm import tqdm
 
@@ -19,6 +20,7 @@ from utilities.utils import invert_dict
 
 if TYPE_CHECKING:
     from common.pipeline_steps import PipelineStep
+    from sklearn.model_selection import BaseShuffleSplit
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -28,10 +30,10 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
         self.pipeline_step: 'PipelineStep' = SELECT_FEATURES
         super().__init__(self.pipeline_step)
 
-        self.learning_rate = self.step_params.get('learning_rate', 0.01)
-        self.n_estimators = self.step_params.get('n_estimators', 300)
-        self.folds = self.step_params.get('folds', 5)
-        self.metric = self.step_params.get('metric', 'roc_auc')
+        self.learning_rate: float = self.step_params.get('learning_rate', 0.01)
+        self.n_estimators: int = self.step_params.get('n_estimators', 300)
+        self.folds: int = self.step_params.get('folds', 5)
+        self.scoring: str = self.step_params.get('scoring', 'roc_auc')
 
     def _get_columns_mapping(self, data: pd.DataFrame) -> dict:
         columns_mapping = dict(zip(
@@ -72,6 +74,14 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
         )
         return less_correlated_features
 
+    @property
+    def _splitter(self) -> 'BaseShuffleSplit':
+        return StratifiedShuffleSplit(
+            n_splits=self.folds,
+            test_size=0.2,
+            random_state=self.settings.random_seed,
+        )
+
     def _get_all_features_stat(
         self,
         data: pd.DataFrame,
@@ -87,8 +97,8 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
             estimator=model,
             X=data,
             y=labels,
-            cv=self.folds,
-            scoring=self.metric,
+            cv=self._splitter,
+            scoring=self.scoring,
             return_estimator=True
         )
 
@@ -143,8 +153,8 @@ class SelectFeaturesPipelineStep(BasePipelineStep):
                 estimator=model,
                 X=X.drop(columns=features_to_remove + [feature]),
                 y=y,
-                scoring=self.metric,
-                cv=self.folds,
+                cv=self._splitter,
+                scoring=self.scoring,
             )
             cv_score_mean = cv_score.mean()
             feature_cv_scores_mean.append(cv_score_mean)

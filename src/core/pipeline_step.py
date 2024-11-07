@@ -42,8 +42,8 @@ class BasePipelineStep(ABC):
     def _init_parameters(self):
         with open(self.settings.params_path) as file:
             params = yaml.load(file, Loader=yaml.Loader)
-            self.common_params: Optional[Dict[str, Any]] = params.get('common', None)
-            self.step_params = params.get(self.pipeline_step.name, None)
+            self.common_params: Optional[Dict[str, Any]] = params.get('common', {})
+            self.step_params = params.get(self.pipeline_step.name, {})
         if self.common_params:
             self.task.connect(self.common_params, name="common")
         if self.step_params:

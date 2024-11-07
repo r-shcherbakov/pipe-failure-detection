@@ -11,7 +11,7 @@ select_features:
     metric_diff_threshold: 0.001
 
 feature_engineer:
-    some_int_parameter: 1
+    kmeans_n_clusters: 4
 
 train:
     skip_cv: True

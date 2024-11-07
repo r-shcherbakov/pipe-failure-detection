@@ -6,7 +6,9 @@ license = "Unlicense"
 authors = ["R.Shcherbakov <some_email@mail.com>"]
 readme = "README.md"
 include = ["LICENSE"]
-packages = [{ include = "src", from = "." }]
+packages = [
+    { include = "common", from = "src" },
+]
 
 [tool.poetry.dependencies]
 python = "~3.10"
@@ -24,12 +26,12 @@ pywavelets = "^1.7.0"
 tsfresh = "^0.20.3"
 lightgbm = "^4.5.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
+evidently = "^0.4.38"
 ipykernel = "*"
 black = "*"
 flakehell = "*"
 isort = "*"
-
 mypy = "*"
 poethepoet = "*"
 pre-commit = "*"
@@ -39,9 +41,6 @@ pytest-mock = "*"
 pytest-profiling = "*"
 pytest-sugar = "*"
 pytest-xdist = "*"
-
-[tool.poetry.group.dev.dependencies]
-evidently = "^0.4.38"
 
 [build-system]
 requires = ["poetry-core"]

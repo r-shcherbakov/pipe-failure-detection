@@ -84,7 +84,7 @@ class SplitDatasetPipelineStep(BasePipelineStep):
             test = data[data.index.isin(test_ids)].copy()
             train = data[~data.index.isin(test_ids)].copy()
         else:
-            test = pd.DataFrame()
+            test = pd.DataFrame(columns=data.columns)
             train = data
 
         return train, test, unlabeled

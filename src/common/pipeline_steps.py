@@ -32,7 +32,23 @@ FEATURE_ENGINEER = PipelineStep(
 )
 SELECT_FEATURES = PipelineStep(
     name="select_features",
-    task_type=TaskTypes.data_processing.name
+    task_type=TaskTypes.data_processing.name,
+)
+SELECT_MODEL = PipelineStep(
+    name="select_model",
+    task_type=TaskTypes.optimizer.name,
+)
+MODELWISE_ANALYSIS = PipelineStep(
+    name="modelwise_analysis",
+    task_type=TaskTypes.optimizer.name,
+)
+SAMPLEWISE_ANALYSIS = PipelineStep(
+    name="samplewise_analysis",
+    task_type=TaskTypes.optimizer.name,
+)
+HYPERPARAMETER_OPTIMIZATION = PipelineStep(
+    name="hyperparameter_optimization",
+    task_type=TaskTypes.optimizer.name
 )
 TRAIN = PipelineStep(
     name="train",
@@ -41,10 +57,6 @@ TRAIN = PipelineStep(
 PLOTTING = PipelineStep(
     name="plotting",
     task_type=TaskTypes.service.name,
-)
-HYPERPARAMETER_OPTIMIZATION = PipelineStep(
-    name="hyperparameter_optimization",
-    task_type=TaskTypes.optimizer.name
 )
 POSTRUN = PipelineStep(
     name="postrun",
