@@ -195,9 +195,8 @@ def run_error_analysis_step() -> None:
 if __name__ == '__main__':
 
     pipe = PipelineController(
-        name=f'{SETTINGS.clearml.project} tasks pipeline',
+        name=f'{SETTINGS.clearml.project} pipeline',
         project=SETTINGS.clearml.project,
-        version='0.0.1',
         add_pipeline_tags=False,
     )
 
@@ -210,7 +209,8 @@ if __name__ == '__main__':
         continue_behaviour=dict(
             continue_on_fail=False,
             continue_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -226,7 +226,8 @@ if __name__ == '__main__':
         continue_behaviour=dict(
             continue_on_fail=False,
             continue_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -243,6 +244,7 @@ if __name__ == '__main__':
             continue_on_fail=False,
             continue_on_abort=False,
         ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -258,7 +260,8 @@ if __name__ == '__main__':
         continue_behaviour=dict(
             continue_on_fail=False,
             continue_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -276,7 +279,8 @@ if __name__ == '__main__':
         continue_behaviour=dict(
             continue_on_fail=False,
             continue_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -294,7 +298,8 @@ if __name__ == '__main__':
             continue_on_abort=False,
             skip_children_on_fail=True,
             skip_children_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -312,7 +317,8 @@ if __name__ == '__main__':
             continue_on_abort=False,
             skip_children_on_fail=True,
             skip_children_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.add_function_step(
@@ -330,13 +336,14 @@ if __name__ == '__main__':
             continue_on_abort=False,
             skip_children_on_fail=True,
             skip_children_on_abort=False,
-        )
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
     )
 
     pipe.set_default_execution_queue(SETTINGS.clearml.queue_name)
     if SETTINGS.clearml.execute_remotely:
         # Starting the pipeline (in the background)
-        pipe.start()
+        pipe.start(queue=SETTINGS.clearml.queue_name)
     else:
         # for debugging purposes use local jobs
         pipe.start_locally(run_pipeline_steps_locally=True)
