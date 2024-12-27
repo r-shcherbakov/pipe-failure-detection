@@ -30,10 +30,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Preprocessor(BaseTransformer):
-    def __init__(self, selected_fc_features: Optional[List[str]] = None):
-        if selected_fc_features:
+    def __init__(self, selected_features: Optional[List[str]] = None):
+        self.selected_features = selected_features
+        if self.selected_features:
             # Get config from columns names
-            self.selected_fc_features = from_columns(selected_fc_features)
+            self.selected_fc_features = from_columns(self.selected_features)
         else:
             self.selected_fc_features = None
 
@@ -69,6 +70,9 @@ class Preprocessor(BaseTransformer):
 
         output = pd.DataFrame(index=data[GROUP_ID.name].unique())
         output = common_pipeline.transform(output)
+
+        if self.selected_features:
+            output = output[self.selected_features]
 
         return output
 

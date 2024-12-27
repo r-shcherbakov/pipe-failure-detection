@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from typing import Any, Tuple, Union, TYPE_CHECKING
+from typing import Any, Tuple, Union
 import warnings
 
 from catboost import CatBoostClassifier
@@ -21,16 +21,12 @@ from common.features import TARGET
 from common.pipeline_steps import SELECT_MODEL
 from core import BasePipelineStep
 
-if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
-
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class SelectModelPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = SELECT_MODEL
-        super().__init__(self.pipeline_step)
+        super().__init__(SELECT_MODEL)
 
         self.scoring: str = self.step_params.get('scoring', 'balanced_accuracy')
         self.n_splits: int = self.step_params.get('n_splits', 5)

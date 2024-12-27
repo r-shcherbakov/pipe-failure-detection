@@ -2,6 +2,9 @@
 data/*
 !/data/raw/
 
+# Artifacts
+artifacts/*
+
 # Jupyter Notebook
 .ipynb_checkpoints
 */.ipynb_checkpoints/*

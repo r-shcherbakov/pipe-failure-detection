@@ -1,1 +1,2 @@
 from train.train_pipeline_step import TrainPipelineStep
+from train.hp_optimization_pipeline_step import HPOptimizationPipelineStep

@@ -91,18 +91,17 @@ class StorageSettings(BaseModel):
 class ClearmlSettings(BaseModel):
     execute_remotely: bool = Field(False, description='Option to enqueue task for remote execution')
     queue_name: str = Field('default', description='The name of the queue')
-    project: str = Field("Pipe failure detection", description='Pipe failure detection')
+    project: str = Field("Pipe failure detection", description='Project name')
     tags: List[str] = Field(
         ["Pipe failure detection", "draft"],
         description=' A list of tags which describe the Task'
     )
+    time_limit: int = Field(
+        None,
+        description='Step execution time limit, if exceeded the Task is aborted \
+            and the pipeline is stopped and marked failed. Default None, no time limit'
+    )
     # output_url: str = Field('s3://bucket/data', description='Target storage for the compressed dataset')
-
-
-class MultiprocessingSettings(BaseModel):
-    n_cpu: int = Field(3)
-    process_timeout: int = Field(3600, description='Timeout of one process in seconds')
-    error_behavior: str = Field('coerce', description='Specifies what to do upon encountering an error')
 
 
 class LoggingSettings(BaseModel):
@@ -117,7 +116,6 @@ class Settings(BaseSettings):
     random_seed: int = Field(42, description='Seed for equivalent experiment results')
 
     clearml: ClearmlSettings = Field(default_factory=ClearmlSettings)
-    multiprocessing: MultiprocessingSettings = Field(default_factory=MultiprocessingSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     artifacts: ArtifactsSettings = Field(default_factory=ArtifactsSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)

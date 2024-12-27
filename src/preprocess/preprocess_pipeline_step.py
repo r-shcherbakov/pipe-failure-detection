@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 import warnings
 
 import pandas as pd
@@ -12,16 +12,12 @@ from common.pipeline_steps import PREPROCESS
 from core import BasePipelineStep
 from preprocess.preprocessor import Preprocessor, MarkDataTransformer
 
-if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
-
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class PreprocessPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = PREPROCESS
-        super().__init__(self.pipeline_step)
+        super().__init__(PREPROCESS)
 
     def _sample_data(self, data: pd.DataFrame) -> pd.DataFrame:
         sample_size = self.step_params.get('sample_size', 1)

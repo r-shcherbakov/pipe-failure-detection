@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import Tuple, List
 import warnings
 
 from evidently.report import Report
@@ -14,17 +14,13 @@ from common.features import TARGET
 from common.pipeline_steps import SPLIT_DATASET
 from core import BasePipelineStep
 
-if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
-
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
 
 class SplitDatasetPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = SPLIT_DATASET
-        super().__init__(self.pipeline_step)
+        super().__init__(SPLIT_DATASET)
 
     def _check_dataset_drift(
         self,

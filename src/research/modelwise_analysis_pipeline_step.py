@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Any, TYPE_CHECKING
+from typing import Any
 import warnings
 
 import matplotlib.pyplot as plt
@@ -15,16 +15,12 @@ from common.features import TARGET
 from common.pipeline_steps import MODELWISE_ANALYSIS
 from core import BasePipelineStep
 
-if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
-
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class ModelwiseAnalysisPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = MODELWISE_ANALYSIS
-        super().__init__(self.pipeline_step)
+        super().__init__(MODELWISE_ANALYSIS)
 
         self.scoring: str = self.step_params.get('scoring', 'balanced_accuracy')
         self.n_splits: int = self.step_params.get('n_splits', 5)

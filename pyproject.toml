@@ -41,6 +41,7 @@ pytest-mock = "*"
 pytest-profiling = "*"
 pytest-sugar = "*"
 pytest-xdist = "*"
+optuna = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core"]
