@@ -14,6 +14,4 @@ feature_engineer:
     kmeans_n_clusters: 4
 
 train:
-    skip_cv: True
-    n_splits: 4
-    train_final_model: True
+    n_splits: 5

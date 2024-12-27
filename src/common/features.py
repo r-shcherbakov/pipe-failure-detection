@@ -79,9 +79,21 @@ CHANNEL_3 = Feature(
     fillna_value=0,
     fillna_limit=SECONDS_IN_MINUTE * 5,
 )
+DISCRETE_PREDICTION = Feature(
+    name="discrete_prediction",
+    dtype="int8",
+    lower=0,
+    upper=1,
+    fillna_value=0,
+)
+PROBABILITY_PREDICTION = Feature(
+    name="probability_prediction",
+    dtype="float32",
+    lower=0,
+    upper=1,
+    fillna_value=0,
+)
 
-
-IGNORED_FEATURES = [GROUP_ID]
 MANDATORY_FEATURES = [
     DATETIME,
     TARGET,

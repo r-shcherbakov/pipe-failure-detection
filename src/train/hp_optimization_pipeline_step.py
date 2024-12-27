@@ -23,10 +23,9 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 class HPOptimizationPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = HYPERPARAMETER_OPTIMIZATION
-        super().__init__(self.pipeline_step)
+        super().__init__(HYPERPARAMETER_OPTIMIZATION)
 
-        self.n_trials: int = self.n_trials.get('n_splits', 50)
+        self.n_trials: int = self.step_params.get('n_trials', 50)
         self.n_splits: int = self.step_params.get('n_splits', 5)
         self.test_size: float = self.step_params.get('test_size', 0.2)
         self.scoring: str = self.step_params.get('scoring', 'balanced_accuracy')
@@ -41,8 +40,8 @@ class HPOptimizationPipelineStep(BasePipelineStep):
 
     def _objective(self, trial) -> float:
         param = {
-            "objective": trial.suggest_categorical("objective", ["Logloss", "CrossEntropy"]),
-            "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.01, 0.1),
+            "objective": trial.suggest_categorical("objective", ["Logloss"]),
+            "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.1, 0.7),
             "depth": trial.suggest_int("depth", 1, 12),
             "boosting_type": trial.suggest_categorical("boosting_type", ["Ordered", "Plain"]),
             "bootstrap_type": trial.suggest_categorical(
@@ -56,7 +55,7 @@ class HPOptimizationPipelineStep(BasePipelineStep):
         elif param["bootstrap_type"] == "Bernoulli":
             param["subsample"] = trial.suggest_float("subsample", 0.1, 1)
 
-        estimator = CatBoostClassifier(**param)
+        estimator = CatBoostClassifier(**param, silent=True)
         cv_score = cross_val_score(
             estimator=estimator,
             X=self.data.drop(columns=[TARGET.name]),
@@ -86,7 +85,4 @@ class HPOptimizationPipelineStep(BasePipelineStep):
             value=trial.value,
         )
 
-        # TODO: report params
-        print("  Params: ")
-        for key, value in trial.params.items():
-            print("    {}: {}".format(key, value))
+        return trial.params

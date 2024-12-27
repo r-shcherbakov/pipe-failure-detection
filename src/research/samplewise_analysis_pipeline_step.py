@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Any, TYPE_CHECKING
+from typing import Any
 import warnings
 
 import matplotlib.pyplot as plt
@@ -13,16 +13,12 @@ from common.features import TARGET
 from common.pipeline_steps import SAMPLEWISE_ANALYSIS
 from core import BasePipelineStep
 
-if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
-
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class SamplewiseAnalysisPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = SAMPLEWISE_ANALYSIS
-        super().__init__(self.pipeline_step)
+        super().__init__(SAMPLEWISE_ANALYSIS)
 
         self.test_size: float = self.step_params.get('test_size', 0.2)
         self.samples: list[float] = self.step_params.get(

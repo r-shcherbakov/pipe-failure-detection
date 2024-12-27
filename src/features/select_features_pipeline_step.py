@@ -19,7 +19,6 @@ from core import BasePipelineStep
 from utilities.utils import invert_dict
 
 if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
     from sklearn.model_selection import BaseShuffleSplit
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -27,8 +26,7 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 class SelectFeaturesPipelineStep(BasePipelineStep):
     def __init__(self):
-        self.pipeline_step: 'PipelineStep' = SELECT_FEATURES
-        super().__init__(self.pipeline_step)
+        super().__init__(SELECT_FEATURES)
 
         self.learning_rate: float = self.step_params.get('learning_rate', 0.01)
         self.n_estimators: int = self.step_params.get('n_estimators', 300)

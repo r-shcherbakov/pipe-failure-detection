@@ -16,6 +16,8 @@ from common.pipeline_steps import (
     SELECT_MODEL,
     MODELWISE_ANALYSIS,
     SAMPLEWISE_ANALYSIS,
+    HYPERPARAMETER_OPTIMIZATION,
+    TRAIN,
 )
 from features import (
     FeatureEngineerPipelineStep,
@@ -29,6 +31,7 @@ from research import (
     SamplewiseAnalysisPipelineStep,
 )
 from settings import SETTINGS
+from train import HPOptimizationPipelineStep, TrainPipelineStep
 from utilities.loaders import CsvLoader
 from utilities.path_utils import is_empty_dir
 
@@ -180,16 +183,32 @@ def run_samplewise_analysis_step(
         step.start(model=model, data=data)
 
 
-def run_hyperparameter_optimization_step() -> dict[str, Union[str, int, float]]:
-    pass
+def run_hyperparameter_optimization_step(data: pd.DataFrame) -> dict[str, Union[str, int, float]]:
+    if data.empty:
+        raise PipelineExecutionError("Data is empty")
+    else:
+        step = HPOptimizationPipelineStep()
+        return step.start(data=data)
 
 
-def run_train_step() -> None:
-    pass
-
-
-def run_error_analysis_step() -> None:
-    pass
+def run_train_step(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    params: dict[str, Union[str, int, float]],
+    feature_engineer: 'FeatureEngineer',
+    selected_features: List[str],
+) -> None:
+    if train.empty:
+        raise PipelineExecutionError("Data is empty")
+    else:
+        step = TrainPipelineStep()
+        step.start(
+            train=train,
+            test=test,
+            params=params,
+            feature_engineer=feature_engineer,
+            selected_features=selected_features
+        )
 
 
 if __name__ == '__main__':
@@ -197,7 +216,10 @@ if __name__ == '__main__':
     pipe = PipelineController(
         name=f'{SETTINGS.clearml.project} pipeline',
         project=SETTINGS.clearml.project,
+        target_project=SETTINGS.clearml.project,
         add_pipeline_tags=False,
+        auto_version_bump=True,
+        add_run_number=False,
     )
 
     pipe.add_function_step(
@@ -336,6 +358,47 @@ if __name__ == '__main__':
             continue_on_abort=False,
             skip_children_on_fail=True,
             skip_children_on_abort=False,
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
+    )
+
+    pipe.add_function_step(
+        name=HYPERPARAMETER_OPTIMIZATION.name,
+        task_type=HYPERPARAMETER_OPTIMIZATION.task_type,
+        parents=[FEATURE_ENGINEER.name],
+        function=run_hyperparameter_optimization_step,
+        function_kwargs=dict(
+            data='${feature_engineer.train}',
+        ),
+        function_return=['best_params'],
+        cache_executed_step=True,
+        continue_behaviour=dict(
+            continue_on_fail=False,
+            continue_on_abort=False,
+        ),
+        time_limit=SETTINGS.clearml.time_limit,
+    )
+
+    pipe.add_function_step(
+        name=TRAIN.name,
+        task_type=TRAIN.task_type,
+        parents=[
+            HYPERPARAMETER_OPTIMIZATION.name,
+            FEATURE_ENGINEER.name,
+            SELECT_FEATURES.name,
+        ],
+        function=run_train_step,
+        function_kwargs=dict(
+            train='${feature_engineer.train}',
+            test='${feature_engineer.test}',
+            params='${hyperparameter_optimization.best_params}',
+            feature_engineer='${feature_engineer.feature_engineer}',
+            selected_features='${select_features.selected_features}',
+        ),
+        # cache_executed_step=True,
+        continue_behaviour=dict(
+            continue_on_fail=False,
+            continue_on_abort=False,
         ),
         time_limit=SETTINGS.clearml.time_limit,
     )
