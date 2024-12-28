@@ -220,6 +220,7 @@ if __name__ == '__main__':
         add_pipeline_tags=False,
         auto_version_bump=True,
         add_run_number=False,
+        packages=False,
     )
 
     pipe.add_function_step(
