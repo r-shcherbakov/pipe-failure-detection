@@ -5,9 +5,9 @@ from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 from clearml import PipelineController, Dataset
 import pandas as pd
 
-from common.exceptions import PipelineExecutionError
-from common.features import TARGET
-from common.pipeline_steps import (
+from src.common.exceptions import PipelineExecutionError
+from src.common.features import TARGET
+from src.common.pipeline_steps import (
     PRERUN,
     PREPROCESS,
     FEATURE_ENGINEER,
@@ -19,24 +19,27 @@ from common.pipeline_steps import (
     HYPERPARAMETER_OPTIMIZATION,
     TRAIN,
 )
-from features import (
+from src.features import (
     FeatureEngineerPipelineStep,
     SplitDatasetPipelineStep,
     SelectFeaturesPipelineStep,
 )
-from preprocess import PreprocessPipelineStep
-from research import (
+from src.preprocess import PreprocessPipelineStep
+from src.research import (
     SelectModelPipelineStep,
     ModelwiseAnalysisPipelineStep,
     SamplewiseAnalysisPipelineStep,
 )
-from settings import SETTINGS
-from train import HPOptimizationPipelineStep, TrainPipelineStep
-from utilities.loaders import CsvLoader
-from utilities.path_utils import is_empty_dir
+from src.settings import SETTINGS
+from src.train import (
+    HPOptimizationPipelineStep,
+    TrainPipelineStep
+)
+from src.utilities.loaders import CsvLoader
+from src.utilities.path_utils import is_empty_dir
 
 if TYPE_CHECKING:
-    from features.feature_engineer import FeatureEngineer
+    from src.features.feature_engineer import FeatureEngineer
 
 
 def run_prerun_step() -> str:
@@ -220,6 +223,7 @@ if __name__ == '__main__':
         add_pipeline_tags=False,
         auto_version_bump=True,
         add_run_number=False,
+        packages="./requirements.txt",
     )
 
     pipe.add_function_step(
@@ -395,7 +399,7 @@ if __name__ == '__main__':
             feature_engineer='${feature_engineer.feature_engineer}',
             selected_features='${select_features.selected_features}',
         ),
-        # cache_executed_step=True,
+        cache_executed_step=True,
         continue_behaviour=dict(
             continue_on_fail=False,
             continue_on_abort=False,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from typing import Any, Union, TYPE_CHECKING
+from typing import Any, Union
 import warnings
 
 from catboost import CatBoostClassifier
@@ -11,12 +11,9 @@ from sklearn.model_selection import (
     cross_val_score,
 )
 
-from common.features import TARGET
-from common.pipeline_steps import HYPERPARAMETER_OPTIMIZATION
-from core import BasePipelineStep
-
-if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
+from src.common.features import TARGET
+from src.common.pipeline_steps import HYPERPARAMETER_OPTIMIZATION
+from src.core import BasePipelineStep
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

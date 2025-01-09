@@ -6,28 +6,25 @@ license = "Unlicense"
 authors = ["R.Shcherbakov <some_email@mail.com>"]
 readme = "README.md"
 include = ["LICENSE"]
-packages = [
-    { include = "common", from = "src" },
-]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-Bottleneck = "*"
 catboost = "*"
 clearml = "*"
 numpy = "*"
 pandas = "*"
-parallelbar = "*"
 pyarrow = "*"
 pydantic = "*"
 pydantic-settings = "*"
 scikit-learn = "*"
-pywavelets = "^1.7.0"
 tsfresh = "^0.20.3"
 lightgbm = "^4.5.0"
 
 [tool.poetry.group.dev.dependencies]
 evidently = "^0.4.38"
+optuna = "^4.0.0"
+
+[tool.poetry.group.test.dependencies]
 ipykernel = "*"
 black = "*"
 flakehell = "*"
@@ -41,7 +38,6 @@ pytest-mock = "*"
 pytest-profiling = "*"
 pytest-sugar = "*"
 pytest-xdist = "*"
-optuna = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from common.enums import DefectType
-from common.exceptions import SplitDataError
-from common.features import TARGET
-from common.pipeline_steps import SPLIT_DATASET
-from core import BasePipelineStep
+from src.common.enums import DefectType
+from src.common.exceptions import SplitDataError
+from src.common.features import TARGET
+from src.common.pipeline_steps import SPLIT_DATASET
+from src.core import BasePipelineStep
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 warnings.simplefilter(action="ignore", category=RuntimeWarning)

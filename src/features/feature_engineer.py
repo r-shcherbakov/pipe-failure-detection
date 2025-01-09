@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from core import BaseTransformer
+from src.core import BaseTransformer
 
 LOGGER = logging.getLogger(__name__)
 

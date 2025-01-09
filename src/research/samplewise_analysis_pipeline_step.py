@@ -9,9 +9,9 @@ from pandas.util import hash_array
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import balanced_accuracy_score
 
-from common.features import TARGET
-from common.pipeline_steps import SAMPLEWISE_ANALYSIS
-from core import BasePipelineStep
+from src.common.features import TARGET
+from src.common.pipeline_steps import SAMPLEWISE_ANALYSIS
+from src.core import BasePipelineStep
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

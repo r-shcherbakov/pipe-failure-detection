@@ -11,9 +11,9 @@ from sklearn.model_selection import (
     GridSearchCV,
 )
 
-from common.features import TARGET
-from common.pipeline_steps import MODELWISE_ANALYSIS
-from core import BasePipelineStep
+from src.common.features import TARGET
+from src.common.pipeline_steps import MODELWISE_ANALYSIS
+from src.core import BasePipelineStep
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

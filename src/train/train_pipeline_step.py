@@ -2,7 +2,6 @@
 import os
 import gc
 from joblib import dump
-import logging
 from typing import Optional, Union, TYPE_CHECKING
 import warnings
 
@@ -10,20 +9,19 @@ from catboost import (
     Pool,
     CatBoostClassifier,
 )
-from clearml import OutputModel
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.pipeline import Pipeline
 from tqdm import tqdm
 
-from core import BasePipelineStep
-from common.enums import DefectType
-from common.pipeline_steps import TRAIN
-from common.features import TARGET
-from preprocess.preprocessor import Preprocessor
+from src.core import BasePipelineStep
+from src.common.enums import DefectType
+from src.common.pipeline_steps import TRAIN
+from src.common.features import TARGET
+from src.preprocess.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    from features.feature_engineer import FeatureEngineer
+    from src.features.feature_engineer import FeatureEngineer
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

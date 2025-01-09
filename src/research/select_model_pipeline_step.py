@@ -17,9 +17,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
-from common.features import TARGET
-from common.pipeline_steps import SELECT_MODEL
-from core import BasePipelineStep
+from src.common.features import TARGET
+from src.common.pipeline_steps import SELECT_MODEL
+from src.core import BasePipelineStep
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 

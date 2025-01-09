@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Union
 import pandas as pd
 import numpy as np
 
-from common.constants import GENERAL_EXTENSION
+from src.common.constants import GENERAL_EXTENSION
 
 LOGGER = logging.getLogger(__name__)
 

@@ -54,10 +54,6 @@ TRAIN = PipelineStep(
     name="train",
     task_type=TaskTypes.training.name,
 )
-PLOTTING = PipelineStep(
-    name="plotting",
-    task_type=TaskTypes.service.name,
-)
 POSTRUN = PipelineStep(
     name="postrun",
     task_type=TaskTypes.service.name
