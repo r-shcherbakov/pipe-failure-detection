@@ -11,15 +11,15 @@ from tsfresh.transformers import FeatureAugmenter
 from tsfresh.utilities.dataframe_functions import impute
 
 
-from core import BaseTransformer
-from common.features import TARGET, GROUP_ID, DATETIME
-from common.config import (
+from src.core import BaseTransformer
+from src.common.features import TARGET, GROUP_ID, DATETIME
+from src.common.config import (
     FEATYPE_TYPES,
     FILLNA_CONFIG,
     CLIP_CONFIG,
 )
-from common.enums import DefectType
-from utilities.transformers import (
+from src.common.enums import DefectType
+from src.utilities.transformers import (
     ColumnsTypeTransformer,
     ClipTransformer,
     InfValuesTransformer,

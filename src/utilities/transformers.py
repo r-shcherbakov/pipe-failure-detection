@@ -4,12 +4,10 @@ import logging
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-from numpy.fft import irfft, rfft, rfftfreq
 import pandas as pd
-import pywt
 
-from core import BaseTransformer
-from utilities.utils import (
+from src.core import BaseTransformer
+from src.utilities.utils import (
     get_subclasses,
     reduce_memory_usage,
 )
@@ -195,66 +193,6 @@ class FillNanTransformer(BaseTransformer):
             )
 
         return X
-
-
-class FourierTransformer(BaseTransformer):
-    r"""Transformer for denoising input series with FFT approach"""
-
-    def __init__(self, threshold: float = 1e8, **kwargs):
-
-        super().__init__(**kwargs)
-        self.threshold = threshold
-
-    def transform(self, series: pd.Series) -> np.ndarray:
-        """Returns denoised array.
-
-        Args:
-            series (pd.Series): Input series.
-
-        Returns:
-            np.ndarray: Denoised with FFT array.
-        """
-
-        series = series.to_numpy()
-        fourier = rfft(series)
-        frequencies = rfftfreq(series.size, d=1e-5)
-        fourier[frequencies > self.threshold] = 0
-        output = irfft(fourier).astype("float32")
-        return output
-
-
-class WaveletTransformer(BaseTransformer):
-    r"""Transformer for denoising input series with wavelet families"""
-
-    def __init__(self, wavelet: str = "db4", level: int = 1, **kwargs):
-
-        super().__init__(**kwargs)
-        self.wavelet = wavelet
-        self.level = level
-
-    def madev(self, d, axis: Union[int, Tuple[int, int], None] = None):
-        """Returns mean absolute deviation of a signal"""
-        return np.mean(np.absolute(d - np.mean(d, axis)), axis)
-
-    def transform(self, series: pd.Series) -> np.ndarray:
-        """Returns denoised array.
-
-        Args:
-            series (pd.Series): Input series.
-
-        Returns:
-            np.ndarray: Denoised array with wavelet families.
-        """
-
-        series = series.to_numpy()
-        coeff = pywt.wavedec(series, self.wavelet, mode="per")
-        sigma = (1 / 0.6745) * self.madev(coeff[-self.level])
-        u_threshold = sigma * np.sqrt(2 * np.log(len(series)))
-        coeff[1:] = (
-            pywt.threshold(i, value=u_threshold, mode="hard") for i in coeff[1:]
-        )
-        output = pywt.waverec(coeff, self.wavelet, mode="per").astype("float32")
-        return output
 
 
 class PositiveReplacer(BaseTransformer):

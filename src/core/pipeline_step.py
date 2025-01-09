@@ -8,11 +8,11 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 from clearml import Task
 import yaml
 
-from settings import SETTINGS
+from src.settings import SETTINGS
 
 if TYPE_CHECKING:
-    from common.pipeline_steps import PipelineStep
-    from settings import Settings
+    from src.common import PipelineStep
+    from src.settings import Settings
 
 
 class BasePipelineStep(ABC):

@@ -4,7 +4,7 @@ import os
 import logging
 from pathlib import Path
 import random
-from typing import Annotated, List, Union
+from typing import List, Union
 
 import numpy as np
 from pydantic import (
@@ -13,11 +13,12 @@ from pydantic import (
     FilePath,
     Field,
     computed_field,
-    field_validator
+    field_validator,
+    Extra,
 )
 from pydantic_settings import BaseSettings
 
-from utilities.logging import set_logging
+from src.utilities.logging import set_logging
 
 PROJECT_PATH = Path(__file__).resolve().parents[1]
 
@@ -123,6 +124,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = os.getenv('ENV', '.env')
         env_nested_delimiter = '__'
+        extra="allow"
 
     @field_validator('random_seed', mode='after')
     def fix_seed(cls, random_seed):

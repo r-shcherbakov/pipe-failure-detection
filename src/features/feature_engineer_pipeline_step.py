@@ -4,10 +4,10 @@ import warnings
 
 import pandas as pd
 
-from common.features import TARGET
-from common.pipeline_steps import FEATURE_ENGINEER
-from core import BasePipelineStep
-from features.feature_engineer import FeatureEngineer
+from src.common.features import TARGET
+from src.common.pipeline_steps import FEATURE_ENGINEER
+from src.core import BasePipelineStep
+from src.features.feature_engineer import FeatureEngineer
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

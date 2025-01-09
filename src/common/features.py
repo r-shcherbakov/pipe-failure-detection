@@ -2,7 +2,7 @@
 """Module describes main features in the project."""
 from dataclasses import dataclass
 from typing import Optional, Union
-from common.constants import NULL, SECONDS_IN_MINUTE
+from src.common.constants import NULL, SECONDS_IN_MINUTE
 
 
 @dataclass(frozen=True)

@@ -13,10 +13,10 @@ from sklearn.model_selection import (
 )
 from tqdm import tqdm
 
-from common.features import TARGET
-from common.pipeline_steps import SELECT_FEATURES
-from core import BasePipelineStep
-from utilities.utils import invert_dict
+from src.common.features import TARGET
+from src.common.pipeline_steps import SELECT_FEATURES
+from src.core import BasePipelineStep
+from src.utilities.utils import invert_dict
 
 if TYPE_CHECKING:
     from sklearn.model_selection import BaseShuffleSplit

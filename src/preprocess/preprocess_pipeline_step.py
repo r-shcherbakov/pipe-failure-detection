@@ -7,10 +7,10 @@ from sklearn import set_config
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 
-from common.features import GROUP_ID
-from common.pipeline_steps import PREPROCESS
-from core import BasePipelineStep
-from preprocess.preprocessor import Preprocessor, MarkDataTransformer
+from src.common.features import GROUP_ID
+from src.common.pipeline_steps import PREPROCESS
+from src.core import BasePipelineStep
+from src.preprocess.preprocessor import Preprocessor, MarkDataTransformer
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
